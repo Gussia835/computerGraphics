@@ -33,9 +33,9 @@ namespace Raster
 
         private void ButtonTask3_Click(object sender, RoutedEventArgs e)
         {
-            //RGBtoHSVconverter task3 = new RGBtoHSVconverter();
-            //task3.Show();
-            //this.Close();
+            TriangleRasterizationWindow task3 = new TriangleRasterizationWindow();
+            task3.Show();
+            this.Close();
         }
 
     }

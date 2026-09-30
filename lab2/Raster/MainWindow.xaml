@@ -16,6 +16,6 @@
 
         <Button Content="Задание 3: (В разработке)"
                 Width="250" Height="40" Margin="10"
-                Click="ButtonTask3_Click" FontSize="14" IsEnabled="False"/>
+                Click="ButtonTask3_Click" FontSize="14"/>
     </StackPanel>
 </Window>
