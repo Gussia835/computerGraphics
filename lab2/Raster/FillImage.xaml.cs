@@ -389,9 +389,9 @@ namespace Raster
             StatusText.Text = "Тестовый круг нарисован";
         }
 
-        private void CreateTestPattern_Click(object sender, RoutedEventArgs e)
+        private void CreateTestPatternChess_Click(object sender, RoutedEventArgs e)
         {
-            patWidth = 32;  // Увеличили размер
+            patWidth = 32;
             patHeight = 32;
             patternPixels = new int[patWidth * patHeight];
 
@@ -410,6 +410,25 @@ namespace Raster
                 }
             }
             StatusText.Text = "Крупный красно-белый паттерн 32x32 создан!";
+        }
+
+        private void CreateTestPatternLines_Click(object sender, RoutedEventArgs e)
+        {
+            patWidth = 16;
+            patHeight = 16;
+            patternPixels = new int[patWidth * patHeight];
+
+            for (int y = 0; y < patHeight; y++)
+            {
+                for (int x = 0; x < patWidth; x++)
+                {
+                    if (y % 4 < 2)
+                        patternPixels[y * patWidth + x] = unchecked((int)0xFFFFFFFF); // Белый
+                    else
+                        patternPixels[y * patWidth + x] = unchecked((int)0xFF0000FF); // Красный
+                }
+            }
+            StatusText.Text = "Паттерн 'Полоски' создан!";
         }
     }
 }
