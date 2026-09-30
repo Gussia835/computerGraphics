@@ -272,25 +272,41 @@ namespace Raster
 
         private void MyImage_MouseMove(object sender, MouseEventArgs e)
         {
-            if (e.LeftButton == MouseButtonState.Pressed && lastX != -1)
+            if (e.LeftButton == MouseButtonState.Pressed)
             {
                 Point pos = e.GetPosition(MyImage);
+
+                if (pos.X < 0 || pos.X >= MyImage.ActualWidth ||
+                    pos.Y < 0 || pos.Y >= MyImage.ActualHeight)
+                    return;
+
                 double scaleX = width / MyImage.ActualWidth;
                 double scaleY = height / MyImage.ActualHeight;
                 int x = (int)(pos.X * scaleX);
                 int y = (int)(pos.Y * scaleY);
 
+                if (lastX == -1 || lastY == -1)
+                {
+                    lastX = x;
+                    lastY = y;
+                }
+
                 int steps = Math.Max(Math.Abs(x - lastX), Math.Abs(y - lastY));
+
+                steps = Math.Max(steps, 10);
+
                 for (int i = 0; i <= steps; i++)
                 {
-                    int px = lastX + (x - lastX) * i / (steps == 0 ? 1 : steps);
-                    int py = lastY + (y - lastY) * i / (steps == 0 ? 1 : steps);
-                    // Толстая линия 3 пикселя
-                    for (int dx = -1; dx <= 1; dx++)
-                        for (int dy = -1; dy <= 1; dy++)
+                    int px = lastX + (x - lastX) * i / steps;
+                    int py = lastY + (y - lastY) * i / steps;
+
+                    for (int dx = -2; dx <= 2; dx++)
+                        for (int dy = -2; dy <= 2; dy++)
                             SetPixel(px + dx, py + dy, 0xFF000000);
                 }
-                lastX = x; lastY = y;
+
+                lastX = x;
+                lastY = y;
                 UpdateScreen();
             }
         }
@@ -306,7 +322,7 @@ namespace Raster
             StatusText.Text = "Заливка...";
             FillScanlineColor(clickX, clickY, 0xFF000000, 0xFF0000FF); // Красный в BGRA
             UpdateScreen();
-            StatusText.Text = "✓ Заливка завершена!";
+            StatusText.Text = "Заливка завершена!";
         }
 
         private void FillPattern_Click(object sender, RoutedEventArgs e)
@@ -316,7 +332,7 @@ namespace Raster
             StatusText.Text = "Заливка паттерном...";
             FillScanlinePattern(clickX, clickY, 0xFF000000, CbCyclic.IsChecked == true);
             UpdateScreen();
-            StatusText.Text = "✓ Готово!";
+            StatusText.Text = "Готово!";
         }
 
         private void TraceBoundary_Click(object sender, RoutedEventArgs e)
@@ -328,7 +344,7 @@ namespace Raster
                 foreach (Point p in contour)
                     SetPixel((int)p.X, (int)p.Y, 0xFF00FF00); // Зеленый
                 UpdateScreen();
-                StatusText.Text = $"✓ Найдено {contour.Count} точек!";
+                StatusText.Text = $"Найдено {contour.Count} точек!";
             }
             else StatusText.Text = "Граница не найдена!";
         }
@@ -368,12 +384,11 @@ namespace Raster
             }
             UpdateScreen();
             clickX = cx; clickY = cy; // Центр для заливки
-            StatusText.Text = "Тестовый круг нарисован! Кликните 'Залить цветом'";
+            StatusText.Text = "Тестовый круг нарисован Кликните 'Залить цветом'";
         }
 
         private void CreateTestPattern_Click(object sender, RoutedEventArgs e)
         {
-            // Создаем шахматный паттерн 16x16
             patWidth = 16;
             patHeight = 16;
             patternPixels = new int[patWidth * patHeight];
@@ -383,13 +398,12 @@ namespace Raster
                 for (int x = 0; x < patWidth; x++)
                 {
                     if ((x + y) % 2 == 0)
-                        patternPixels[y * patWidth + x] = (int)0xFF0000FF;
+                        patternPixels[y * patWidth + x] = unchecked((int)0xFF00FFFF); // Желтый
                     else
-                        patternPixels[y * patWidth + x] = (int)0xFFFF0000;
+                        patternPixels[y * patWidth + x] = unchecked((int)0xFF000000); // Чёрный
                 }
             }
-
-            StatusText.Text = "✓ Шахматный паттерн 16x16 создан!";
+            StatusText.Text = "Ч/Б шахматный паттерн 16x16 создан";
         }
     }
 }
