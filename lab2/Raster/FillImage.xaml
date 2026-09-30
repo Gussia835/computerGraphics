@@ -31,6 +31,14 @@
             <Button Content="Очистить холст" Click="ClearCanvas_Click" Margin="0,20,0,0" Padding="5"/>
 
             <TextBlock x:Name="StatusText" Text="Готово к работе" FontSize="11" Foreground="Blue" Margin="0,10,0,0" TextWrapping="Wrap"/>
+            
+            <Button x:Name="BackToMain"
+                    Content="В меню"
+                    Margin="-80,100,0,0"
+                    Click="ButtonBack_Click"
+                    Width="80"
+                    Height="30"
+                    />
         </StackPanel>
 
         <Border Grid.Column="1" BorderBrush="Black" BorderThickness="1" Margin="10" Background="White">

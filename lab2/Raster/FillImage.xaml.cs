@@ -503,7 +503,7 @@ namespace Raster
                         patternPixels[y * patWidth + x] = unchecked((int)0xFF0000FF); // Красный (BGRA!)
                 }
             }
-            StatusText.Text = "Крупный красно-белый паттерн 32x32 создан!";
+            StatusText.Text = "красно-белый паттерн 32x32 создан!";
         }
 
         private void CreateTestPatternLines_Click(object sender, RoutedEventArgs e)
@@ -523,6 +523,15 @@ namespace Raster
                 }
             }
             StatusText.Text = "Паттерн 'Полоски' создан!";
+        }
+
+        private void ButtonBack_Click(object sender, RoutedEventArgs e)
+        {
+
+            MainWindow mainWindow = new MainWindow();
+
+            mainWindow.Show();
+            this.Close();
         }
     }
 }
