@@ -1,0 +1,43 @@
+﻿<Window x:Class="Raster.FillImage"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Raster"
+        mc:Ignorable="d"
+         Title="Заливка и Границы" Height="700" Width="900">
+   
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="200"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <StackPanel Grid.Column="0" Margin="10" Background="#F0F0F0">
+            <TextBlock Text="Управление" FontWeight="Bold" Margin="0,0,0,10"/>
+
+            <TextBlock Text="1. Рисование:" FontWeight="SemiBold" Margin="0,5,0,2"/>
+            <TextBlock Text="Зажми ЛКМ на поле справа, чтобы нарисовать черную замкнутую фигуру." TextWrapping="Wrap" FontSize="11" Margin="0,0,0,10"/>
+
+            <Button Content="Загрузить паттерн (1б)" Click="LoadPattern_Click" Margin="0,5" Padding="5"/>
+            <CheckBox x:Name="CbCyclic" Content="Циклический паттерн" IsChecked="True" Margin="0,0,0,10"/>
+
+            <Button Content="2. Залить цветом (1а)" Click="FillColor_Click" Background="#FFD0D0" Margin="0,5" Padding="5"/>
+            <Button Content="3. Залить паттерном (1б)" Click="FillPattern_Click" Background="#FFD0D0" Margin="0,5" Padding="5"/>
+            <Button Content="4. Обвести границу (1в)" Click="TraceBoundary_Click" Background="#D0FFD0" Margin="0,5" Padding="5"/>
+
+            <Button Content="Очистить холст" Click="ClearCanvas_Click" Margin="0,20,0,0" Padding="5"/>
+
+            <TextBlock x:Name="StatusText" Text="Готово к работе" FontSize="11" Foreground="Blue" Margin="0,10,0,0" TextWrapping="Wrap"/>
+        </StackPanel>
+
+        <!-- Холст для рисования -->
+        <Border Grid.Column="1" BorderBrush="Black" BorderThickness="1" Margin="10">
+            <Image Name="MyImage"
+                  MouseDown="MyImage_MouseDown" 
+                  MouseMove="MyImage_MouseMove" 
+                  MouseUp="MyImage_MouseUp"
+                  Cursor="Cross" Margin="-12,-11,12,11"/>
+        </Border>
+    </Grid>
+</Window>
