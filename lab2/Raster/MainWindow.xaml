@@ -12,7 +12,7 @@
 
         <Button Content="Задание 2: (В разработке)"
                 Width="250" Height="40" Margin="10"
-                Click="ButtonTask2_Click" FontSize="14" IsEnabled="False"/>
+                Click="ButtonTask2_Click" FontSize="14"/>
 
         <Button Content="Задание 3: (В разработке)"
                 Width="250" Height="40" Margin="10"

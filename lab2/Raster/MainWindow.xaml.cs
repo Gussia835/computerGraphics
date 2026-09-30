@@ -26,9 +26,9 @@ namespace Raster
 
         private void ButtonTask2_Click(object sender, RoutedEventArgs e)
         {
-            //RGBHystograms task2 = new RGBHystograms();
-            //task2.Show();
-            //this.Close();
+            DrawSegment task2 = new DrawSegment();
+            task2.Show();
+            this.Close();
         }
 
         private void ButtonTask3_Click(object sender, RoutedEventArgs e)
