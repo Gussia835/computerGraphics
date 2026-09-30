@@ -211,62 +211,157 @@ namespace Raster
             }
         }
 
-        private bool IsPatterned(uint color)
-        {
-            return color != 0xFFFFFFFF && color != 0xFF000000 && color != 0xFF808080;
-        }
-
         // ЗАДАНИЕ 1в 
         private void TraceBoundary_Click(object sender, RoutedEventArgs e)
         {
-            StatusText.Text = "Поиск границы...";
-            int pointsCount = 0;
-
-          
-            for (int y = 0; y < height; y++)
+            if (clickX == -1 || clickY == -1)
             {
-                for (int x = 0; x < width; x++)
+                StatusText.Text = "Сначала кликните на или внутри фигуры!";
+                return;
+            }
+
+            StatusText.Text = "Поиск границы...";
+
+            int startX = -1, startY = -1;
+
+            for (int radius = 0; radius <= 200 && startX == -1; radius++)
+            {
+                for (int dy = -radius; dy <= radius && startX == -1; dy++)
                 {
-                  
-                    if (GetPixel(x, y) == 0xFF000000)
+                    for (int dx = -radius; dx <= radius && startX == -1; dx++)
                     {
-             
-                        bool hasWhiteNeighbor = false;
+                        int x = clickX + dx;
+                        int y = clickY + dy;
 
-                        for (int dy = -1; dy <= 1; dy++)
+                        if (x >= 0 && x < width && y >= 0 && y < height)
                         {
-                            for (int dx = -1; dx <= 1; dx++)
+                            if (GetPixel(x, y) == 0xFF000000) // Чёрный пиксель
                             {
-                                if (dx == 0 && dy == 0) continue;
-
-                                int nx = x + dx;
-                                int ny = y + dy;
-
-                                if (nx >= 0 && nx < width && ny >= 0 && ny < height)
-                                {
-                         
-                                    if (GetPixel(nx, ny) == 0xFFFFFFFF)
-                                    {
-                                        hasWhiteNeighbor = true;
-                                        break;
-                                    }
-                                }
+                                startX = x;
+                                startY = y;
+                                break;
                             }
-                            if (hasWhiteNeighbor) break;
-                        }
-
-       
-                        if (hasWhiteNeighbor)
-                        {
-                            SetPixel(x, y, 0xFF00FF00);
-                            pointsCount++;
                         }
                     }
                 }
             }
 
-            UpdateScreen();
-            StatusText.Text = $"Граница обведена! Найдено {pointsCount} точек.";
+            if (startX == -1)
+            {
+                StatusText.Text = "Граница не найдена рядом с кликом!";
+                return;
+            }
+
+                
+            List<Point> contour = TraceBoundaryFromPoint(startX, startY, 0xFF000000);
+
+            if (contour.Count > 0)
+            {
+              
+                foreach (Point p in contour)
+                {
+                    int px = (int)p.X;
+                    int py = (int)p.Y;
+
+                    
+                    for (int dy = -1; dy <= 1; dy++)
+                    {
+                        for (int dx = -1; dx <= 1; dx++)
+                        {
+                            SetPixel(px + dx, py + dy, 0xFF00FF00); // Зелёный
+                        }
+                    }
+                }
+                UpdateScreen();
+                StatusText.Text = $"Граница области обведена! Найдено {contour.Count} точек.";
+            }
+            else
+            {
+                StatusText.Text = "Не удалось обойти границу!";
+            }
+        }
+
+        
+        private List<Point> TraceBoundaryFromPoint(int startX, int startY, uint borderColor)
+        {
+            List<Point> boundaryPoints = new List<Point>();
+            boundaryPoints.Add(new Point(startX, startY));
+
+            int currX = startX, currY = startY;
+            int[] dx = { 1, 1, 0, -1, -1, -1, 0, 1 };
+            int[] dy = { 0, 1, 1, 1, 0, -1, -1, -1 };
+            int enterDir = 4; 
+
+            int maxIterations = 10000; 
+            int iterations = 0;
+
+            do
+            {
+                iterations++;
+                if (iterations > maxIterations)
+                {
+                    StatusText.Text = "Превышено максимальное число итераций!";
+                    break;
+                }
+
+                int bgDir = -1;
+
+       
+                for (int i = 0; i < 8; i++)
+                {
+                    int checkDir = (enterDir + 5 + i) % 8;
+                    int nx = currX + dx[checkDir];
+                    int ny = currY + dy[checkDir];
+
+                    if (nx >= 0 && nx < width && ny >= 0 && ny < height)
+                    {
+                        if (GetPixel(nx, ny) != borderColor)
+                        {
+                            bgDir = checkDir;
+                            break;
+                        }
+                    }
+                }
+
+                if (bgDir == -1) break; 
+
+        
+                int nextX = -1, nextY = -1, nextDir = -1;
+
+                for (int i = 0; i < 8; i++)
+                {
+                    int checkDir = (bgDir + i) % 8;
+                    int nx = currX + dx[checkDir];
+                    int ny = currY + dy[checkDir];
+
+                    if (nx >= 0 && nx < width && ny >= 0 && ny < height)
+                    {
+                        if (GetPixel(nx, ny) == borderColor)
+                        {
+                            nextX = nx;
+                            nextY = ny;
+                            nextDir = checkDir;
+                            break;
+                        }
+                    }
+                }
+
+                if (nextX == -1) break; 
+
+    
+                currX = nextX;
+                currY = nextY;
+                enterDir = (nextDir + 4) % 8; 
+
+         
+                if (currX == startX && currY == startY)
+                    break;
+
+                boundaryPoints.Add(new Point(currX, currY));
+
+            } while (true);
+
+            return boundaryPoints;
         }
 
         // ОБРАБОТЧИКИ
@@ -373,7 +468,6 @@ namespace Raster
       
         private void TestCircle_Click(object sender, RoutedEventArgs e)
         {
-            // Рисуем идеальный круг для тестирования
             int cx = 400, cy = 300, r = 150;
             for (int angle = 0; angle < 360; angle++)
             {
