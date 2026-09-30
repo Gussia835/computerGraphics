@@ -399,7 +399,7 @@ namespace Raster
             {
                 for (int x = 0; x < patWidth; x++)
                 {
-                    // Делаем КРУПНЫЕ клетки 8x8 пикселей
+                
                     int blockX = x / 8;
                     int blockY = y / 8;
 
