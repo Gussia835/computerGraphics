@@ -84,7 +84,7 @@ namespace Raster
         {
             if (y < 0 || y >= height) return;
             uint currentColor = GetPixel(x, y);
-            if (currentColor == borderColor || currentColor == fillColor) return;
+            if (currentColor == borderColor) return;
 
             int xLeft = x;
             while (xLeft >= 0 && GetPixel(xLeft, y) != borderColor && GetPixel(xLeft, y) != fillColor)
@@ -111,7 +111,7 @@ namespace Raster
 
             while (x <= prevRight)
             {
-                if (GetPixel(x, y) != borderColor && GetPixel(x, y) != fillColor)
+                if (GetPixel(x, y) != borderColor)
                 {
                     if (!spanStarted)
                     {
@@ -131,18 +131,42 @@ namespace Raster
         private void FillScanlinePattern(int x, int y, uint borderColor, bool isCyclic)
         {
             if (y < 0 || y >= height) return;
-            if (GetPixel(x, y) == borderColor) return;
+
+            uint currentColor = GetPixel(x, y);
+
+   
+            if (currentColor == borderColor || currentColor == 0xFF808080)
+                return;
 
             int xLeft = x;
-            while (xLeft >= 0 && GetPixel(xLeft, y) != borderColor && !IsPatterned(GetPixel(xLeft, y)))
+            while (xLeft >= 0)
+            {
+                uint c = GetPixel(xLeft, y);
+                if (c == borderColor || c == 0xFF808080) break;
                 --xLeft;
+            }
             ++xLeft;
 
             int xRight = x;
-            while (xRight < width && GetPixel(xRight, y) != borderColor && !IsPatterned(GetPixel(xRight, y)))
+            while (xRight < width)
+            {
+                uint c = GetPixel(xRight, y);
+                if (c == borderColor || c == 0xFF808080) break;
                 ++xRight;
+            }
             --xRight;
 
+            //временный маркер
+            for (int i = xLeft; i <= xRight; ++i)
+            {
+                SetPixel(i, y, 0xFF808080); // Серый маркер
+            }
+
+           
+            FillNextScanlinePattern(xLeft, xRight, y - 1, borderColor, isCyclic);
+            FillNextScanlinePattern(xLeft, xRight, y + 1, borderColor, isCyclic);
+
+            // ПОТОМ заменяем серый на цвета паттерна
             for (int i = xLeft; i <= xRight; ++i)
             {
                 int sampleX = isCyclic ? ((i % patWidth) + patWidth) % patWidth : i;
@@ -150,28 +174,28 @@ namespace Raster
 
                 if (!isCyclic && (i >= patWidth || y >= patHeight))
                 {
-                    SetPixel(i, y, 0xFF808080);
+                    SetPixel(i, y, 0xFFAAAAAA); // Светло-серый для выхода за пределы
                     continue;
                 }
 
                 int patternIndex = sampleY * patWidth + sampleX;
                 SetPixel(i, y, (uint)patternPixels[patternIndex]);
             }
-
-            FillNextScanlinePattern(xLeft, xRight, y - 1, borderColor, isCyclic);
-            FillNextScanlinePattern(xLeft, xRight, y + 1, borderColor, isCyclic);
         }
 
         private void FillNextScanlinePattern(int prevLeft, int prevRight, int y, uint borderColor, bool isCyclic)
         {
             if (y < 0 || y >= height) return;
+
             int x = prevLeft;
             bool spanStarted = false;
 
             while (x <= prevRight)
             {
                 uint c = GetPixel(x, y);
-                if (c != borderColor && !IsPatterned(c))
+
+                
+                if (c != borderColor && c != 0xFF808080)
                 {
                     if (!spanStarted)
                     {
@@ -179,7 +203,10 @@ namespace Raster
                         FillScanlinePattern(x, y, borderColor, isCyclic);
                     }
                 }
-                else spanStarted = false;
+                else
+                {
+                    spanStarted = false;
+                }
                 ++x;
             }
         }
@@ -190,67 +217,56 @@ namespace Raster
         }
 
         // ЗАДАНИЕ 1в 
-        private List<Point> TraceBoundary(uint borderColor)
+        private void TraceBoundary_Click(object sender, RoutedEventArgs e)
         {
-            List<Point> boundaryPoints = new List<Point>();
-            int startX = -1, startY = -1;
+            StatusText.Text = "Поиск границы...";
+            int pointsCount = 0;
 
+          
             for (int y = 0; y < height; y++)
             {
                 for (int x = 0; x < width; x++)
                 {
-                    if (GetPixel(x, y) == borderColor)
+                  
+                    if (GetPixel(x, y) == 0xFF000000)
                     {
-                        startX = x; startY = y;
-                        break;
+             
+                        bool hasWhiteNeighbor = false;
+
+                        for (int dy = -1; dy <= 1; dy++)
+                        {
+                            for (int dx = -1; dx <= 1; dx++)
+                            {
+                                if (dx == 0 && dy == 0) continue;
+
+                                int nx = x + dx;
+                                int ny = y + dy;
+
+                                if (nx >= 0 && nx < width && ny >= 0 && ny < height)
+                                {
+                         
+                                    if (GetPixel(nx, ny) == 0xFFFFFFFF)
+                                    {
+                                        hasWhiteNeighbor = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (hasWhiteNeighbor) break;
+                        }
+
+       
+                        if (hasWhiteNeighbor)
+                        {
+                            SetPixel(x, y, 0xFF00FF00);
+                            pointsCount++;
+                        }
                     }
                 }
-                if (startX != -1) break;
             }
 
-            if (startX == -1) return boundaryPoints;
-            boundaryPoints.Add(new Point(startX, startY));
-
-            int currX = startX, currY = startY;
-            int[] dx = { 1, 1, 0, -1, -1, -1, 0, 1 };
-            int[] dy = { 0, 1, 1, 1, 0, -1, -1, -1 };
-            int enterDir = 4;
-
-            do
-            {
-                int bgDir = -1;
-                for (int i = 0; i < 8; i++)
-                {
-                    int checkDir = (enterDir + 5 + i) % 8;
-                    int nx = currX + dx[checkDir], ny = currY + dy[checkDir];
-                    if (nx >= 0 && nx < width && ny >= 0 && ny < height && GetPixel(nx, ny) != borderColor)
-                    {
-                        bgDir = checkDir;
-                        break;
-                    }
-                }
-                if (bgDir == -1) break;
-
-                int nextX = -1, nextY = -1, nextDir = -1;
-                for (int i = 0; i < 8; i++)
-                {
-                    int checkDir = (bgDir + i) % 8;
-                    int nx = currX + dx[checkDir], ny = currY + dy[checkDir];
-                    if (nx >= 0 && nx < width && ny >= 0 && ny < height && GetPixel(nx, ny) == borderColor)
-                    {
-                        nextX = nx; nextY = ny; nextDir = checkDir;
-                        break;
-                    }
-                }
-                if (nextX == -1) break;
-
-                currX = nextX; currY = nextY;
-                enterDir = (nextDir + 4) % 8;
-                boundaryPoints.Add(new Point(currX, currY));
-
-            } while (currX != startX || currY != startY);
-
-            return boundaryPoints;
+            UpdateScreen();
+            StatusText.Text = $"Граница обведена! Найдено {pointsCount} точек.";
         }
 
         // ОБРАБОТЧИКИ
@@ -332,21 +348,7 @@ namespace Raster
             StatusText.Text = "Заливка паттерном...";
             FillScanlinePattern(clickX, clickY, 0xFF000000, CbCyclic.IsChecked == true);
             UpdateScreen();
-            StatusText.Text = "Готово!";
-        }
-
-        private void TraceBoundary_Click(object sender, RoutedEventArgs e)
-        {
-            StatusText.Text = "Поиск границы...";
-            List<Point> contour = TraceBoundary(0xFF000000);
-            if (contour.Count > 0)
-            {
-                foreach (Point p in contour)
-                    SetPixel((int)p.X, (int)p.Y, 0xFF00FF00); // Зеленый
-                UpdateScreen();
-                StatusText.Text = $"Найдено {contour.Count} точек!";
-            }
-            else StatusText.Text = "Граница не найдена!";
+            StatusText.Text = "Готово";
         }
 
         private void LoadPattern_Click(object sender, RoutedEventArgs e)
@@ -368,7 +370,7 @@ namespace Raster
             }
         }
 
-        // ДОБАВЬТЕ ЭТУ КНОПКУ В XAML И ЭТОТ МЕТОД - для теста!
+      
         private void TestCircle_Click(object sender, RoutedEventArgs e)
         {
             // Рисуем идеальный круг для тестирования
@@ -383,27 +385,31 @@ namespace Raster
                         SetPixel(x + dx, y + dy, 0xFF000000);
             }
             UpdateScreen();
-            clickX = cx; clickY = cy; // Центр для заливки
-            StatusText.Text = "Тестовый круг нарисован Кликните 'Залить цветом'";
+            clickX = cx; clickY = cy; 
+            StatusText.Text = "Тестовый круг нарисован";
         }
 
         private void CreateTestPattern_Click(object sender, RoutedEventArgs e)
         {
-            patWidth = 16;
-            patHeight = 16;
+            patWidth = 32;  // Увеличили размер
+            patHeight = 32;
             patternPixels = new int[patWidth * patHeight];
 
             for (int y = 0; y < patHeight; y++)
             {
                 for (int x = 0; x < patWidth; x++)
                 {
-                    if ((x + y) % 2 == 0)
-                        patternPixels[y * patWidth + x] = unchecked((int)0xFF00FFFF); // Желтый
+                    // Делаем КРУПНЫЕ клетки 8x8 пикселей
+                    int blockX = x / 8;
+                    int blockY = y / 8;
+
+                    if ((blockX + blockY) % 2 == 0)
+                        patternPixels[y * patWidth + x] = unchecked((int)0xFFFFFFFF); // Белый
                     else
-                        patternPixels[y * patWidth + x] = unchecked((int)0xFF000000); // Чёрный
+                        patternPixels[y * patWidth + x] = unchecked((int)0xFF0000FF); // Красный (BGRA!)
                 }
             }
-            StatusText.Text = "Ч/Б шахматный паттерн 16x16 создан";
+            StatusText.Text = "Крупный красно-белый паттерн 32x32 создан!";
         }
     }
 }

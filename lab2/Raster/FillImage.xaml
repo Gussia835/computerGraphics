@@ -34,10 +34,11 @@
 
         <Border Grid.Column="1" BorderBrush="Black" BorderThickness="1" Margin="10" Background="White">
             <Image Name="MyImage"
-                   MouseDown="MyImage_MouseDown" 
-                   MouseMove="MyImage_MouseMove" 
-                   MouseUp="MyImage_MouseUp"
-                   Cursor="Cross"/>
+                    Stretch="None"
+                    MouseDown="MyImage_MouseDown" 
+                     MouseMove="MyImage_MouseMove" 
+                    MouseUp="MyImage_MouseUp"
+                    Cursor="Cross"/>
         </Border>
     </Grid>
 </Window>
