@@ -1,5 +1,4 @@
 ﻿using System;
-using System;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -32,18 +31,41 @@ namespace Raster
             {
                 int* pBackBuffer = (int*)wbitmap.BackBuffer;
 
-                DrawThickBresenhamLine(pBackBuffer, 70, 40, 220, 310, 0xFF000000);
+                int cx1 = width / 4;
+                int cy1 = height / 2;
+                int len = 140;
 
-                DrawThickWuLine(pBackBuffer, 270, 40, 420, 310);
+                double a1 = 15.0 * Math.PI / 180.0;
+
+                DrawBresenhamLine(pBackBuffer, cx1, cy1, cx1 + (int)(len * Math.Cos(a1)), cy1 + (int)(len * Math.Sin(a1)), 0xFF000000);
+                DrawBresenhamLine(pBackBuffer, cx1, cy1, cx1 + (int)(len * Math.Cos(Math.PI / 2 - a1)), cy1 + (int)(len * Math.Sin(Math.PI / 2 - a1)), 0xFF000000);
+                DrawBresenhamLine(pBackBuffer, cx1, cy1, cx1 - (int)(len * Math.Cos(Math.PI / 2 - a1)), cy1 + (int)(len * Math.Sin(Math.PI / 2 - a1)), 0xFF000000);
+                DrawBresenhamLine(pBackBuffer, cx1, cy1, cx1 - (int)(len * Math.Cos(a1)), cy1 + (int)(len * Math.Sin(a1)), 0xFF000000);
+                DrawBresenhamLine(pBackBuffer, cx1, cy1, cx1 - (int)(len * Math.Cos(a1)), cy1 - (int)(len * Math.Sin(a1)), 0xFF000000);
+                DrawBresenhamLine(pBackBuffer, cx1, cy1, cx1 - (int)(len * Math.Cos(Math.PI / 2 - a1)), cy1 - (int)(len * Math.Sin(Math.PI / 2 - a1)), 0xFF000000);
+                DrawBresenhamLine(pBackBuffer, cx1, cy1, cx1 + (int)(len * Math.Cos(Math.PI / 2 - a1)), cy1 - (int)(len * Math.Sin(Math.PI / 2 - a1)), 0xFF000000);
+                DrawBresenhamLine(pBackBuffer, cx1, cy1, cx1 + (int)(len * Math.Cos(a1)), cy1 - (int)(len * Math.Sin(a1)), 0xFF000000);
+
+                int cx2 = width * 3 / 4;
+                int cy2 = height / 2;
+
+                DrawWuLine(pBackBuffer, cx2, cy2, cx2 + (int)(len * Math.Cos(a1)), cy2 + (int)(len * Math.Sin(a1)));
+                DrawWuLine(pBackBuffer, cx2, cy2, cx2 + (int)(len * Math.Cos(Math.PI / 2 - a1)), cy2 + (int)(len * Math.Sin(Math.PI / 2 - a1)));
+                DrawWuLine(pBackBuffer, cx2, cy2, cx2 - (int)(len * Math.Cos(Math.PI / 2 - a1)), cy2 + (int)(len * Math.Sin(Math.PI / 2 - a1)));
+                DrawWuLine(pBackBuffer, cx2, cy2, cx2 - (int)(len * Math.Cos(a1)), cy2 + (int)(len * Math.Sin(a1)));
+                DrawWuLine(pBackBuffer, cx2, cy2, cx2 - (int)(len * Math.Cos(a1)), cy2 - (int)(len * Math.Sin(a1)));
+                DrawWuLine(pBackBuffer, cx2, cy2, cx2 - (int)(len * Math.Cos(Math.PI / 2 - a1)), cy2 - (int)(len * Math.Sin(Math.PI / 2 - a1)));
+                DrawWuLine(pBackBuffer, cx2, cy2, cx2 + (int)(len * Math.Cos(Math.PI / 2 - a1)), cy2 - (int)(len * Math.Sin(Math.PI / 2 - a1)));
+                DrawWuLine(pBackBuffer, cx2, cy2, cx2 + (int)(len * Math.Cos(a1)), cy2 - (int)(len * Math.Sin(a1)));
             }
 
             wbitmap.AddDirtyRect(new Int32Rect(0, 0, width, height));
             wbitmap.Unlock();
         }
+
         private void ButtonBack_Click(object sender, RoutedEventArgs e)
         {
             MainWindow mainWindow = new MainWindow();
-
             mainWindow.Show();
             this.Close();
         }
@@ -85,7 +107,7 @@ namespace Raster
             }
         }
 
-        private unsafe void DrawThickBresenhamLine(int* buffer, int x0, int y0, int x1, int y1, uint color)
+        private unsafe void DrawBresenhamLine(int* buffer, int x0, int y0, int x1, int y1, uint color)
         {
             int dx = Math.Abs(x1 - x0);
             int sx = x0 < x1 ? 1 : -1;
@@ -93,21 +115,9 @@ namespace Raster
             int sy = y0 < y1 ? 1 : -1;
             int error = dx + dy;
 
-            bool steep = Math.Abs(y1 - y0) > Math.Abs(x1 - x0);
-
             while (true)
             {
                 PutPixel(buffer, x0, y0, color);
-                if (steep)
-                {
-                    PutPixel(buffer, x0 - 1, y0, color);
-                    PutPixel(buffer, x0 + 1, y0, color);
-                }
-                else
-                {
-                    PutPixel(buffer, x0, y0 - 1, color);
-                    PutPixel(buffer, x0, y0 + 1, color);
-                }
 
                 if (x0 == x1 && y0 == y1) break;
 
@@ -125,24 +135,17 @@ namespace Raster
             }
         }
 
-        private unsafe void DrawThickWuLine(int* buffer, int x0, int y0, int x1, int y1)
+        private unsafe void DrawWuLine(int* buffer, int x0, int y0, int x1, int y1)
         {
             void DrawPointAlpha(int x, int y, float intensity)
             {
                 if (intensity < 0) intensity = 0;
                 if (intensity > 1) intensity = 1;
 
-                intensity = (float)Math.Sqrt(intensity);
                 uint alpha = (uint)(intensity * 255);
-
-
-                if (x >= 0 && x < width && y >= 0 && y < height)
-                {
-                    uint bg = 255 - alpha;
-                    uint gray = bg;
-                    uint finalColor = (255U << 24) | (gray << 16) | (gray << 8) | gray;
-                    PutPixel(buffer, x, y, finalColor);
-                }
+                uint gray = 255 - alpha;
+                uint finalColor = (255U << 24) | (gray << 16) | (gray << 8) | gray;
+                PutPixel(buffer, x, y, finalColor);
             }
 
             bool steep = Math.Abs(y1 - y0) > Math.Abs(x1 - x0);
@@ -172,17 +175,13 @@ namespace Raster
 
                 if (steep)
                 {
-                    DrawPointAlpha(ipart - 1, x, (1 - fpart) * 0.5f);
-                    DrawPointAlpha(ipart, x, 1 - fpart + fpart * 0.5f);
-                    DrawPointAlpha(ipart + 1, x, fpart + (1 - fpart) * 0.5f);
-                    DrawPointAlpha(ipart + 2, x, fpart * 0.5f);
+                    DrawPointAlpha(ipart, x, 1 - fpart);
+                    DrawPointAlpha(ipart + 1, x, fpart);
                 }
                 else
                 {
-                    DrawPointAlpha(x, ipart - 1, (1 - fpart) * 0.5f);
-                    DrawPointAlpha(x, ipart, 1 - fpart + fpart * 0.5f);
-                    DrawPointAlpha(x, ipart + 1, fpart + (1 - fpart) * 0.5f);
-                    DrawPointAlpha(x, ipart + 2, fpart * 0.5f);
+                    DrawPointAlpha(x, ipart, 1 - fpart);
+                    DrawPointAlpha(x, ipart + 1, fpart);
                 }
                 y += gradient;
             }
@@ -191,4 +190,3 @@ namespace Raster
         }
     }
 }
-
