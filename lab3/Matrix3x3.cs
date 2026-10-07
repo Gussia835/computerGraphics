@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace lab3
 {
@@ -14,11 +10,12 @@ namespace lab3
 
         public Matrix3x3(double[,] data)
         {
-            if (data.GetLength(0) != 3 || data.GetLength(1) != 3) {
+            if (data.GetLength(0) != 3 || data.GetLength(1) != 3)
+            {
                 throw new ArgumentException("Матрица должна быть 3×3");
-
-                Array.Copy(data, Data, 9);
             }
+           
+            Array.Copy(data, Data, 9);
         }
 
         // Единичная матрица 
@@ -43,7 +40,8 @@ namespace lab3
                 {
                     for (int k = 0; k < 3; k++)
                     {
-                        res.Data[i, j] = a.Data[i, k] * b.Data[k, j];
+                        // ИСПРАВЛЕНИЕ 2: Добавлен знак += для накопления суммы произведений.
+                        res.Data[i, j] += a.Data[i, k] * b.Data[k, j];
                     }
                 }
             }
@@ -51,7 +49,7 @@ namespace lab3
             return res;
         }
 
-        // сдвиг на(dx, dy) 
+        // Применение матрицы к точке
         public (double x, double y) TransformPoint(double x, double y)
         {
             double rx = Data[0, 0] * x + Data[0, 1] * y + Data[0, 2];
@@ -61,7 +59,7 @@ namespace lab3
             return (rx / rw, ry / rw);
         }
 
-        // Поворот вокруг НАЧАЛА КООРДИНАТ на угол (в радианах)
+        // Сдвиг на (dx, dy) 
         public static Matrix3x3 Translation(double dx, double dy)
         {
             return new Matrix3x3(new double[,]
@@ -72,7 +70,7 @@ namespace lab3
             });
         }
 
-        // Масштабирование относительно начала координат
+        // Поворот вокруг НАЧАЛА КООРДИНАТ на угол (в радианах)
         public static Matrix3x3 Rotation(double angleRad)
         {
             double c = Math.Cos(angleRad);
@@ -85,8 +83,7 @@ namespace lab3
             });
         }
 
-        // Поворот вокруг произвольной точки(cx, cy).
-        // M = T(cx,cy) × R(θ) × T(−cx,−cy)
+        // Масштабирование относительно начала координат
         public static Matrix3x3 Scaling(double sx, double sy)
         {
             return new Matrix3x3(new double[,]
@@ -97,9 +94,8 @@ namespace lab3
             });
         }
 
-        // асштабирование относительно произвольной точки (cx, cy).
-        // M = T(cx,cy) × S(sx,sy) × T(−cx,−cy)
-
+        // Поворот вокруг произвольной точки (cx, cy).
+        // M = T(cx,cy) × R(θ) × T(−cx,−cy)
         public static Matrix3x3 RotationAroundPoint(double angleRad, double cx, double cy)
         {
             var tBack = Translation(cx, cy);
@@ -108,6 +104,8 @@ namespace lab3
             return Multiply(tBack, Multiply(rot, tTo));
         }
 
+        // Масштабирование относительно произвольной точки (cx, cy).
+        // M = T(cx,cy) × S(sx,sy) × T(−cx,−cy)
         public static Matrix3x3 ScalingAroundPoint(double sx, double sy, double cx, double cy)
         {
             var tBack = Translation(cx, cy);

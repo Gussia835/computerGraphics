@@ -160,5 +160,6 @@
                     MouseLeftButtonDown="Canvas_MouseLeftButtonDown"
                     ClipToBounds="True"/>
         </Border>
+
     </DockPanel>
 </Window>

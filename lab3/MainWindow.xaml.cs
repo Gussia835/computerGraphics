@@ -35,6 +35,7 @@ namespace lab3
         public MainWindow()
         {
             InitializeComponent();
+            RbCreate.IsChecked = true; 
             _currentPolygon = new Polygon2D();
         }
 
@@ -445,6 +446,10 @@ namespace lab3
         }
 
       
-        private void SetStatus(string text) => TbStatus.Text = text;
+        private void SetStatus(string text)
+        {
+            if (TbStatus != null)  
+                TbStatus.Text = text;
+        }
     }
 }
