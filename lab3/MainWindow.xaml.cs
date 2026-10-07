@@ -12,19 +12,19 @@ namespace lab3
 {
     public partial class MainWindow : Window
     {
-  
         private readonly List<Polygon2D> _polygons = new List<Polygon2D>();
-        private Polygon2D _currentPolygon;      
+        private Polygon2D _currentPolygon;
         private int _polygonCounter;
 
-        // ---- Состояние ----
-        private enum Mode { Create, Select, Pivot }
+        private enum Mode { Create, Select, Pivot, PointInPolygon, PointVsEdge }
         private Mode _mode = Mode.Create;
 
-        private Point? _pivotPoint;                
-        private Polygon2D _selectedPolygon;         
+        private Point? _pivotPoint;
+        private Polygon2D _selectedPolygon;
 
-        // ---- Визуал ----
+        private Point? _userPoint;
+        private (Polygon2D poly, int edgeIndex)? _selectedEdge;
+
         private readonly SolidColorBrush[] _palette =
         {
             Brushes.SteelBlue, Brushes.Crimson, Brushes.ForestGreen,
@@ -35,10 +35,10 @@ namespace lab3
         public MainWindow()
         {
             InitializeComponent();
-            RbCreate.IsChecked = true; 
+            RbCreate.IsChecked = true;
             _currentPolygon = new Polygon2D();
+            RefreshTask3Selectors();
         }
-
 
         private void ModeChanged(object sender, RoutedEventArgs e)
         {
@@ -56,6 +56,16 @@ namespace lab3
             {
                 _mode = Mode.Pivot;
                 SetStatus("Режим задания точки: кликните на холст, чтобы задать опорную точку.");
+            }
+            else if (RbPointInPolygon?.IsChecked == true)
+            {
+                _mode = Mode.PointInPolygon;
+                SetStatus("3а: кликните точку — проверю принадлежность выбранному полигону.");
+            }
+            else if (RbPointVsEdge?.IsChecked == true)
+            {
+                _mode = Mode.PointVsEdge;
+                SetStatus("3б: кликните точку — определю, слева или справа от ребра.");
             }
         }
 
@@ -83,6 +93,14 @@ namespace lab3
                     SetStatus($"Опорная точка задана: ({pt.X:F1}, {pt.Y:F1})");
                     Redraw();
                     break;
+
+                case Mode.PointInPolygon:
+                    HandlePointInPolygonClick(pt);
+                    break;
+
+                case Mode.PointVsEdge:
+                    HandlePointVsEdgeClick(pt);
+                    break;
             }
         }
 
@@ -101,6 +119,7 @@ namespace lab3
             LbPolygons.SelectedIndex = LbPolygons.Items.Count - 1;
 
             _currentPolygon = new Polygon2D();
+            RefreshTask3Selectors();
             SetStatus("Полигон добавлен. Создавайте следующий или выберите для преобразований.");
             Redraw();
         }
@@ -115,6 +134,13 @@ namespace lab3
             LbPolygons.Items.Clear();
             TbPivotInfo.Text = "Точка не задана";
             TbPivotInfo.Foreground = Brushes.Red;
+
+            _userPoint = null;
+            _selectedEdge = null;
+            TbTask3Result.Text = "—";
+            TbTask3PointInfo.Text = "Точка не задана";
+            RefreshTask3Selectors();
+
             SetStatus("Сцена очищена.");
             Redraw();
         }
@@ -163,7 +189,6 @@ namespace lab3
             }
         }
 
-
         private Polygon2D GetSelectedOrWarn()
         {
             if (_selectedPolygon == null)
@@ -183,7 +208,6 @@ namespace lab3
             return fallback;
         }
 
-        // Смещение (трансляция)
         private void ApplyTranslation_Click(object sender, RoutedEventArgs e)
         {
             var poly = GetSelectedOrWarn();
@@ -192,7 +216,6 @@ namespace lab3
             double dx = ParseDouble(TbDx, "dx", 0);
             double dy = ParseDouble(TbDy, "dy", 0);
 
-            // Матрица трансляции
             Matrix3x3 m = Matrix3x3.Translation(dx, dy);
             poly.ApplyTransform(m);
 
@@ -200,7 +223,6 @@ namespace lab3
             Redraw();
         }
 
-        //Поворот вокруг центра масс
         private void ApplyRotationCenter_Click(object sender, RoutedEventArgs e)
         {
             var poly = GetSelectedOrWarn();
@@ -210,8 +232,6 @@ namespace lab3
             double angleRad = angleDeg * Math.PI / 180.0;
 
             Point c = poly.CenterOfMass;
-
-            // M = T(c) × R(θ) × T(−c)
             Matrix3x3 m = Matrix3x3.RotationAroundPoint(angleRad, c.X, c.Y);
             poly.ApplyTransform(m);
 
@@ -219,7 +239,6 @@ namespace lab3
             Redraw();
         }
 
-        //  Поворот вокруг произвольной точки
         private void ApplyRotationPivot_Click(object sender, RoutedEventArgs e)
         {
             var poly = GetSelectedOrWarn();
@@ -242,7 +261,6 @@ namespace lab3
             Redraw();
         }
 
-        //  Масштабирование вокруг центра масс
         private void ApplyScaleCenter_Click(object sender, RoutedEventArgs e)
         {
             var poly = GetSelectedOrWarn();
@@ -259,7 +277,6 @@ namespace lab3
             Redraw();
         }
 
-        //  Масштабирование вокруг произвольной точки
         private void ApplyScalePivot_Click(object sender, RoutedEventArgs e)
         {
             var poly = GetSelectedOrWarn();
@@ -281,15 +298,117 @@ namespace lab3
             Redraw();
         }
 
+        private void HandlePointInPolygonClick(Point p)
+        {
+            _userPoint = p;
+
+            var polygon = CbPolygonForPointIn.SelectedItem as Polygon2D
+                          ?? _selectedPolygon;
+
+            if (polygon == null)
+            {
+                SetStatus("3а: полигон не выбран.");
+                Redraw();
+                return;
+            }
+
+            bool inside = GeometryAlgorithms.IsPointInsidePolygon(p, polygon.Vertices);
+
+            TbTask3Result.Text = inside
+                ? $"Точка ВНУТРИ полигона «{polygon.Name}»"
+                : $"Точка СНАРУЖИ полигона «{polygon.Name}»";
+            TbTask3PointInfo.Text = $"Точка: ({p.X:F1}, {p.Y:F1})";
+            SetStatus(TbTask3Result.Text);
+            Redraw();
+        }
+
+        private void HandlePointVsEdgeClick(Point p)
+        {
+            _userPoint = p;
+
+            if (_selectedEdge == null)
+            {
+                SetStatus("3б: ребро не выбрано.");
+                Redraw();
+                return;
+            }
+
+            var (poly, idx) = _selectedEdge.Value;
+            if (poly.Vertices.Count < 2) return;
+
+            Point a = poly.Vertices[idx];
+            Point b = poly.Vertices[(idx + 1) % poly.Vertices.Count];
+
+            string side = GeometryAlgorithms.ClassifyPointRelativeToEdge(p, a, b);
+
+            TbTask3Result.Text = $"Точка {side} от ребра {idx}→{(idx + 1) % poly.Vertices.Count}";
+            TbTask3PointInfo.Text = $"Точка: ({p.X:F1}, {p.Y:F1})";
+            SetStatus(TbTask3Result.Text);
+            Redraw();
+        }
+
+        private void PolygonForPointIn_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_userPoint.HasValue && _mode == Mode.PointInPolygon)
+                HandlePointInPolygonClick(_userPoint.Value);
+        }
+
+        private void EdgeForClassification_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (CbEdgeForClassification.SelectedItem is EdgeItem item)
+            {
+                _selectedEdge = (item.Polygon, item.EdgeIndex);
+                if (_userPoint.HasValue && _mode == Mode.PointVsEdge)
+                    HandlePointVsEdgeClick(_userPoint.Value);
+                else
+                    Redraw();
+            }
+        }
+
+        private void RefreshTask3Selectors()
+        {
+            var prevIn = CbPolygonForPointIn.SelectedItem as Polygon2D;
+            CbPolygonForPointIn.ItemsSource = null;
+            CbPolygonForPointIn.ItemsSource = _polygons;
+            if (prevIn != null && _polygons.Contains(prevIn))
+                CbPolygonForPointIn.SelectedItem = prevIn;
+            else if (_polygons.Count > 0)
+                CbPolygonForPointIn.SelectedIndex = 0;
+
+            var edges = new List<EdgeItem>();
+            foreach (var poly in _polygons)
+            {
+                if (poly.Vertices.Count < 2) continue;
+                int limit = poly.Vertices.Count == 2 ? 1 : poly.Vertices.Count;
+                for (int i = 0; i < limit; i++)
+                {
+                    int j = (i + 1) % poly.Vertices.Count;
+                    edges.Add(new EdgeItem
+                    {
+                        Polygon = poly,
+                        EdgeIndex = i,
+                        Display = $"{poly.Name}: {i}→{j}"
+                    });
+                }
+            }
+            CbEdgeForClassification.ItemsSource = edges;
+            if (edges.Count > 0) CbEdgeForClassification.SelectedIndex = 0;
+            else _selectedEdge = null;
+        }
+
+        internal class EdgeItem
+        {
+            public Polygon2D Polygon { get; set; }
+            public int EdgeIndex { get; set; }
+            public string Display { get; set; }
+        }
 
         private void Redraw()
         {
             MainCanvas.Children.Clear();
 
-            // Сетка (лёгкая)
             DrawGrid();
 
-            // Все завершённые полигоны
             for (int i = 0; i < _polygons.Count; i++)
             {
                 var poly = _polygons[i];
@@ -298,13 +417,47 @@ namespace lab3
                 DrawPolygon(poly, color, selected);
             }
 
-            // Текущий (создаваемый) полигон — пунктир
             if (_currentPolygon.Vertices.Count > 0)
                 DrawPolygon(_currentPolygon, Brushes.Gray, false, dashed: true);
 
-            // Опорная точка
             if (_pivotPoint.HasValue)
                 DrawCross(_pivotPoint.Value, Brushes.Red, 8);
+
+            if (_userPoint.HasValue)
+            {
+                var marker = new Ellipse
+                {
+                    Width = 10,
+                    Height = 10,
+                    Fill = Brushes.Red,
+                    Stroke = Brushes.Black,
+                    StrokeThickness = 1.5
+                };
+                Canvas.SetLeft(marker, _userPoint.Value.X - 5);
+                Canvas.SetTop(marker, _userPoint.Value.Y - 5);
+                MainCanvas.Children.Add(marker);
+            }
+
+            if (_selectedEdge != null)
+            {
+                var (poly, idx) = _selectedEdge.Value;
+                if (poly.Vertices.Count >= 2)
+                {
+                    Point a = poly.Vertices[idx];
+                    Point b = poly.Vertices[(idx + 1) % poly.Vertices.Count];
+                    var hl = new Line
+                    {
+                        X1 = a.X,
+                        Y1 = a.Y,
+                        X2 = b.X,
+                        Y2 = b.Y,
+                        Stroke = Brushes.Orange,
+                        StrokeThickness = 4,
+                        Opacity = 0.7
+                    };
+                    MainCanvas.Children.Add(hl);
+                }
+            }
         }
 
         private void DrawGrid()
@@ -347,7 +500,6 @@ namespace lab3
             var pts = poly.Vertices;
             if (pts.Count == 0) return;
 
-            // --- Точка (1 вершина) ---
             if (pts.Count == 1)
             {
                 var ell = new Ellipse
@@ -364,7 +516,6 @@ namespace lab3
                 return;
             }
 
-            // --- Ребро / Полигон (≥2 вершин) ---
             var polyline = new Polyline
             {
                 Points = new PointCollection(pts),
@@ -378,7 +529,6 @@ namespace lab3
 
             if (poly.IsClosed && !dashed)
             {
-                // Замкнутый полигон — полупрозрачная заливка
                 var polygon = new System.Windows.Shapes.Polygon
                 {
                     Points = new PointCollection(pts),
@@ -397,7 +547,6 @@ namespace lab3
                 MainCanvas.Children.Add(polyline);
             }
 
-            // Вершины — кружки
             foreach (var v in pts)
             {
                 var ell = new Ellipse
@@ -413,7 +562,6 @@ namespace lab3
                 MainCanvas.Children.Add(ell);
             }
 
-            // Центр масс (для выбранного)
             if (selected && pts.Count >= 2)
             {
                 Point c = poly.CenterOfMass;
@@ -445,10 +593,9 @@ namespace lab3
             MainCanvas.Children.Add(l2);
         }
 
-      
         private void SetStatus(string text)
         {
-            if (TbStatus != null)  
+            if (TbStatus != null)
                 TbStatus.Text = text;
         }
     }
