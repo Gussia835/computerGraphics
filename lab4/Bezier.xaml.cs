@@ -63,10 +63,22 @@ namespace BezierSpline
 
         private void Canvas_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
-            isPanning = true;
-            lastPanPosition = e.GetPosition(outerCanvas);
-            outerCanvas.Cursor = Cursors.SizeAll;
-            outerCanvas.CaptureMouse();
+            Point screenPos = e.GetPosition(outerCanvas);
+            Point canvasPos = ScreenToCanvas(screenPos);
+
+            int nearestIndex = FindNearestPoint(canvasPos);
+
+            if (nearestIndex != -1)
+            {
+                RemovePoint(nearestIndex);
+            }
+            else
+            {
+                isPanning = true;
+                lastPanPosition = screenPos;
+                outerCanvas.Cursor = Cursors.SizeAll;
+                outerCanvas.CaptureMouse();
+            }
         }
 
         private void Canvas_MouseRightButtonUp(object sender, MouseButtonEventArgs e)
@@ -190,6 +202,19 @@ namespace BezierSpline
             Redraw();
         }
 
+        private void RemovePoint(int index)
+        {
+            if (index < 0 || index >= controlPoints.Count)
+                return;
+
+            controlPoints.RemoveAt(index);
+
+            innerCanvas.Children.Remove(pointMarkers[index]);
+            pointMarkers.RemoveAt(index);
+
+            Redraw();
+        }
+
         private void Redraw()
         {
             controlPolyline.Points = new PointCollection(controlPoints);
@@ -209,9 +234,9 @@ namespace BezierSpline
                     Point p2 = controlPoints[startIndex + 2];
                     Point p3 = controlPoints[startIndex + 3];
 
-                    for (int i = 0; i <= 50; i++)
+                    for (int i = 0; i <= 500; i++)
                     {
-                        double t = (double)i / 50.0;
+                        double t = (double)i / 500.0;
                         Point curvePoint = CalculateCubicBezier(p0, p1, p2, p3, t);
                         curvePoints.Add(curvePoint);
                     }
