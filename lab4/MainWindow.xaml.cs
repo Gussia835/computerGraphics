@@ -35,9 +35,9 @@ namespace lab4
 
         private void ButtonTask2_Click(object sender, RoutedEventArgs e)
         {
-            // DrawSegment task2 = new DrawSegment();
-            // task2.Show();
-            // this.Close();
+            MountainWindow task2 = new MountainWindow();
+            task2.Owner = this;
+            task2.ShowDialog();
         }
 
         private void ButtonTask3_Click(object sender, RoutedEventArgs e)
