@@ -26,11 +26,18 @@ namespace lab4
             InitializeComponent();
         }
 
-        private void ButtonTask1_Click(object sender, RoutedEventArgs e)
+        private void ButtonTask1a_Click(object sender, RoutedEventArgs e)
         {
-            // FillImage task1 = new FillImage();
-            // task1.Show();
-            // this.Close();
+            FractLineWindow task1a = new FractLineWindow();
+            task1a.Show();
+            this.Close();
+        }
+
+        private void ButtonTask1b_Click(object sender, RoutedEventArgs e)
+        {
+            FractalTreeWindow task1b = new FractalTreeWindow();
+            task1b.Show();
+            this.Close();
         }
 
         private void ButtonTask2_Click(object sender, RoutedEventArgs e)
