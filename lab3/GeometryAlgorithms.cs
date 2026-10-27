@@ -76,4 +76,22 @@ namespace lab3
             return inside;
         }
     }
+    internal class Edge2D
+    {
+        public Point A { get; set; }
+        public Point B { get; set; }
+        public string Name { get; set; }
+
+        public Edge2D Clone()
+        {
+            return new Edge2D
+            {
+                A = new Point(A.X, A.Y),
+                B = new Point(B.X, B.Y),
+                Name = Name
+            };
+        }
+
+        public override string ToString() => Name ?? $"{A}–{B}";
+    }
 }

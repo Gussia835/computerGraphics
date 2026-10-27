@@ -124,5 +124,51 @@ namespace lab6.Core
                    Math.Abs(M43 - other.M43) < epsilon &&
                    Math.Abs(M44 - other.M44) < epsilon;
         }
+
+        public static Matrix4x4 RotateX(double angleRad)
+        {
+            double cos = Math.Cos(angleRad);
+            double sin = Math.Sin(angleRad);
+            return new Matrix4x4
+            {
+                M11 = 1,
+                M22 = cos,
+                M23 = -sin,
+                M32 = sin,
+                M33 = cos,
+                M44 = 1
+            };
+        }
+
+        public static Matrix4x4 RotateY(double angleRad)
+        {
+            double cos = Math.Cos(angleRad);
+            double sin = Math.Sin(angleRad);
+            return new Matrix4x4
+            {
+                M11 = cos,
+                M13 = -sin,
+                M22 = 1,
+                M31 = sin,
+                M33 = cos,
+                M44 = 1
+            };
+        }
+
+        public static Matrix4x4 RotateZ(double angleRad)
+        {
+            double cos = Math.Cos(angleRad);
+            double sin = Math.Sin(angleRad);
+            return new Matrix4x4
+            {
+                M11 = cos,
+                M12 = -sin,
+                M21 = sin,
+                M22 = cos,
+                M33 = 1,
+                M44 = 1
+            };
+        }
+
     }
 }

@@ -31,8 +31,9 @@
 
     <DockPanel>
 
-        <StackPanel DockPanel.Dock="Left"
-                    Width="280"
+        <Grid DockPanel.Dock="Left"
+                    Width="320"
+                    MinWidth="260"
                     Background="#F0F0F0"
                     Margin="0"
                     VerticalAlignment="Stretch">
@@ -63,6 +64,10 @@
                                          Content="Точка относительно ребра"
                                          Margin="4"
                                          Checked="ModeChanged" />
+                            <RadioButton x:Name="RbAddEdge"
+                                         Content="Добавить ребро"
+                                         Margin="4"
+                                         Checked="ModeChanged" />
                         </StackPanel>
                     </GroupBox>
 
@@ -78,6 +83,40 @@
                                      Height="100"
                                      Margin="4"
                                      SelectionChanged="PolygonSelectionChanged" />
+                        </StackPanel>
+                    </GroupBox>
+
+                    <GroupBox Header="Рёбра и пересечения (задание 2)"
+          FontWeight="Bold">
+                        <StackPanel Margin="4">
+                            <TextBlock FontSize="11"
+                   Foreground="Gray"
+                   TextWrapping="Wrap"
+                   Margin="4,2">
+            Режим «Добавить ребро»: клик — начало, клик — конец.
+            Пока двигаете мышь — ребро тянется за курсором,
+            пересечения считаются в реальном времени.
+                            </TextBlock>
+
+                            <Button Content="Отменить текущее ребро"
+                Click="CancelEdge_Click" />
+
+                            <Button Content="Очистить рёбра"
+                Background="#FFCCCC"
+                Click="ClearEdges_Click" />
+
+                            <Label Content="Рёбра:" />
+                            <ListBox x:Name="LbEdges"
+                                Height="80"
+                                Margin="4" />
+
+                            <Label Content="Найдено пересечений:" />
+                            <TextBlock x:Name="TbIntersectionsInfo"
+                   FontWeight="Bold"
+                   Foreground="DarkGreen"
+                   TextWrapping="Wrap"
+                   Margin="4"
+                   Text="0" />
                         </StackPanel>
                     </GroupBox>
 
@@ -220,7 +259,7 @@
 
                 </StackPanel>
             </ScrollViewer>
-        </StackPanel>
+        </Grid>
 
         <StatusBar DockPanel.Dock="Bottom">
             <StatusBarItem>
@@ -234,7 +273,8 @@
                 Margin="4">
             <Canvas x:Name="MainCanvas"
                     Background="White"
-                    MouseLeftButtonDown="Canvas_MouseLeftButtonDown"
+                    PreviewMouseLeftButtonDown="Canvas_MouseLeftButtonDown"
+                    MouseMove="Canvas_MouseMove"
                     ClipToBounds="True" />
         </Border>
     </DockPanel>

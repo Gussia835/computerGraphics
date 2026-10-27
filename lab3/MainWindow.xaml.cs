@@ -14,9 +14,17 @@ namespace lab3
     {
         private readonly List<Polygon2D> _polygons = new List<Polygon2D>();
         private Polygon2D _currentPolygon;
+
+        private readonly List<Edge2D> _edges = new List<Edge2D>();
+        private int _edgeCounter;
+
+        private Point? _pendingEdgeStart;     
+        private Point? _previewEdgeEnd;       
+
+        private readonly List<Point> _intersections = new List<Point>();
         private int _polygonCounter;
 
-        private enum Mode { Create, Select, Pivot, PointInPolygon, PointVsEdge }
+        private enum Mode { Create, Select, Pivot, PointInPolygon, PointVsEdge, AddEdge }
         private Mode _mode = Mode.Create;
 
         private Point? _pivotPoint;
@@ -67,6 +75,125 @@ namespace lab3
                 _mode = Mode.PointVsEdge;
                 SetStatus("3б: кликните точку — определю, слева или справа от ребра.");
             }
+            else if (RbAddEdge?.IsChecked == true)
+            {
+                _mode = Mode.AddEdge;
+                _pendingEdgeStart = null;
+                _previewEdgeEnd = null;
+                SetStatus("Клик — начало ребра, второй клик — конец.");
+                Redraw();
+            }
+        }
+        private void HandleAddEdgeClick(Point p)
+        {
+            if (_pendingEdgeStart == null)
+            {
+                _pendingEdgeStart = p;
+                _previewEdgeEnd = p;
+                SetStatus($"Начало ребра: ({p.X:F1}, {p.Y:F1}). Ведите мышь и кликните конец.");
+            }
+            else
+            {
+                _edgeCounter++;
+                var edge = new Edge2D
+                {
+                    A = _pendingEdgeStart.Value,
+                    B = p,
+                    Name = $"E{_edgeCounter}"
+                };
+                _edges.Add(edge);
+                LbEdges.Items.Add(edge.Name);
+
+                _pendingEdgeStart = null;
+                _previewEdgeEnd = null;
+
+                SetStatus($"Ребро {edge.Name} добавлено.");
+                RecomputeIntersections();
+                Redraw();
+            }
+        }
+        private void Canvas_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (_mode != Mode.AddEdge) return;
+            if (_pendingEdgeStart == null) return;
+
+            _previewEdgeEnd = e.GetPosition(MainCanvas);
+
+            RecomputeIntersections(includePreview: true);
+            Redraw();
+        }
+
+        private void RecomputeIntersections(bool includePreview = false)
+        {
+            _intersections.Clear();
+
+            var allEdges = GetAllEdges(includePreview);
+
+            for (int i = 0; i < allEdges.Count; i++)
+            {
+                for (int j = i + 1; j < allEdges.Count; j++)
+                {
+                    var p = GeometryAlgorithms.FindEdgeIntersection(
+                        allEdges[i].A, allEdges[i].B,
+                        allEdges[j].A, allEdges[j].B);
+
+                    if (p.HasValue)
+                        _intersections.Add(p.Value);
+                }
+            }
+
+            TbIntersectionsInfo.Text = _intersections.Count == 0
+                ? "0"
+                : $"{_intersections.Count}\n" +
+                  string.Join("\n", _intersections.Select(pt => $"({pt.X:F1}, {pt.Y:F1})"));
+        }
+
+        private List<Edge2D> GetAllEdges(bool includePreview)
+        {
+            var list = new List<Edge2D>();
+
+            list.AddRange(_edges);
+
+            foreach (var poly in _polygons)
+            {
+                if (poly.Vertices.Count < 2) continue;
+                int limit = poly.IsClosed ? poly.Vertices.Count : poly.Vertices.Count - 1;
+                for (int i = 0; i < limit; i++)
+                {
+                    int j = (i + 1) % poly.Vertices.Count;
+                    list.Add(new Edge2D
+                    {
+                        A = poly.Vertices[i],
+                        B = poly.Vertices[j],
+                        Name = $"{poly.Name}: {i}→{j}"
+                    });
+                }
+            }
+
+            if (_currentPolygon.Vertices.Count >= 2)
+            {
+                for (int i = 0; i < _currentPolygon.Vertices.Count - 1; i++)
+                {
+                    list.Add(new Edge2D
+                    {
+                        A = _currentPolygon.Vertices[i],
+                        B = _currentPolygon.Vertices[i + 1],
+                        Name = $"Текущий: {i}→{i + 1}"
+                    });
+                }
+            }
+
+            if (includePreview && _pendingEdgeStart.HasValue && _previewEdgeEnd.HasValue)
+            {
+                list.Add(new Edge2D
+                {
+                    A = _pendingEdgeStart.Value,
+                    B = _previewEdgeEnd.Value,
+                    Name = "preview"
+                });
+            }
+
+            return list;
         }
 
         private void Canvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -101,6 +228,9 @@ namespace lab3
                 case Mode.PointVsEdge:
                     HandlePointVsEdgeClick(pt);
                     break;
+                case Mode.AddEdge:
+                    HandleAddEdgeClick(pt);
+                    break;
             }
         }
 
@@ -134,6 +264,13 @@ namespace lab3
             LbPolygons.Items.Clear();
             TbPivotInfo.Text = "Точка не задана";
             TbPivotInfo.Foreground = Brushes.Red;
+            _edges.Clear();
+            _edgeCounter = 0;
+            _pendingEdgeStart = null;
+            _previewEdgeEnd = null;
+            LbEdges.Items.Clear();
+            _intersections.Clear();
+            TbIntersectionsInfo.Text = "0";
 
             _userPoint = null;
             _selectedEdge = null;
@@ -143,6 +280,34 @@ namespace lab3
 
             SetStatus("Сцена очищена.");
             Redraw();
+        }
+
+        private void CancelEdge_Click(object sender, RoutedEventArgs e)
+        {
+            if (_pendingEdgeStart == null)
+            {
+                SetStatus("Нечего отменять.");
+                return;
+            }
+            _pendingEdgeStart = null;
+            _previewEdgeEnd = null;
+            RecomputeIntersections();
+            Redraw();
+            SetStatus("Текущее ребро отменено.");
+        }
+
+        private void ClearEdges_Click(object sender, RoutedEventArgs e)
+        {
+            _edges.Clear();
+            _edgeCounter = 0;
+            _pendingEdgeStart = null;
+            _previewEdgeEnd = null;
+            LbEdges.Items.Clear();
+            _intersections.Clear();
+            TbIntersectionsInfo.Text = "0";
+            RecomputeIntersections();
+            Redraw();
+            SetStatus("Рёбра очищены.");
         }
 
         private void TrySelectPolygon(Point clickPt)
@@ -403,6 +568,43 @@ namespace lab3
             public string Display { get; set; }
         }
 
+        private void DrawEdge(Point a, Point b, Brush color,
+                      double thickness, bool dashed = false)
+        {
+            var line = new Line
+            {
+                X1 = a.X,
+                Y1 = a.Y,
+                X2 = b.X,
+                Y2 = b.Y,
+                Stroke = color,
+                StrokeThickness = thickness
+            };
+
+            if (dashed)
+                line.StrokeDashArray = new DoubleCollection { 4, 3 };
+
+            MainCanvas.Children.Add(line);
+
+            DrawEndpointMarker(a, color);
+            DrawEndpointMarker(b, color);
+        }
+
+        private void DrawEndpointMarker(Point p, Brush color)
+        {
+            var ell = new Ellipse
+            {
+                Width = 6,
+                Height = 6,
+                Fill = Brushes.White,
+                Stroke = color,
+                StrokeThickness = 1.5
+            };
+            Canvas.SetLeft(ell, p.X - 3);
+            Canvas.SetTop(ell, p.Y - 3);
+            MainCanvas.Children.Add(ell);
+        }
+
         private void Redraw()
         {
             MainCanvas.Children.Clear();
@@ -419,6 +621,32 @@ namespace lab3
 
             if (_currentPolygon.Vertices.Count > 0)
                 DrawPolygon(_currentPolygon, Brushes.Gray, false, dashed: true);
+
+            foreach (var edge in _edges)
+            {
+                DrawEdge(edge.A, edge.B, Brushes.Blue, 2);
+            }
+
+            if (_pendingEdgeStart.HasValue && _previewEdgeEnd.HasValue)
+            {
+                DrawEdge(_pendingEdgeStart.Value, _previewEdgeEnd.Value,
+                         Brushes.DodgerBlue, 2, dashed: true);
+            }
+
+            foreach (var ip in _intersections)
+            {
+                var marker = new Ellipse
+                {
+                    Width = 12,
+                    Height = 12,
+                    Fill = Brushes.Yellow,
+                    Stroke = Brushes.Red,
+                    StrokeThickness = 2
+                };
+                Canvas.SetLeft(marker, ip.X - 6);
+                Canvas.SetTop(marker, ip.Y - 6);
+                MainCanvas.Children.Add(marker);
+            }
 
             if (_pivotPoint.HasValue)
                 DrawCross(_pivotPoint.Value, Brushes.Red, 8);
