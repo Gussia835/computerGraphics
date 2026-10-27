@@ -1,0 +1,55 @@
+﻿<Window x:Class="lab6.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:lab6"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="450" Width="800">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="250"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <StackPanel Grid.Column="0" Margin="10">
+            <TextBlock Text="Выбор фигуры:" FontWeight="Bold" Margin="0,0,0,5"/>
+            <ComboBox x:Name="ShapeSelector" SelectionChanged="ShapeSelector_Changed">
+                <ComboBoxItem Content="Тетраэдр" IsSelected="True"/>
+                <ComboBoxItem Content="Куб"/>
+            </ComboBox>
+
+            <TextBlock Text="Преобразования:" FontWeight="Bold" Margin="0,15,0,5"/>
+
+            <TextBlock Text="Смещение X:"/>
+            <Slider x:Name="TranslateX" Minimum="-3" Maximum="3" Value="0" ValueChanged="Transform_Changed"/>
+
+            <TextBlock Text="Смещение Y:"/>
+            <Slider x:Name="TranslateY" Minimum="-3" Maximum="3" Value="0" ValueChanged="Transform_Changed"/>
+
+            <TextBlock Text="Смещение Z:"/>
+            <Slider x:Name="TranslateZ" Minimum="-3" Maximum="3" Value="0" ValueChanged="Transform_Changed"/>
+
+            <TextBlock Text="Масштаб:"/>
+            <Slider x:Name="ScaleSlider" Minimum="0.5" Maximum="2" Value="1" ValueChanged="Transform_Changed"/>
+
+            <TextBlock Text="Отражение:" Margin="0,10,0,5"/>
+            
+            <CheckBox x:Name="ReflectXYCheck" Content="Отразить по XY" Checked="Transform_Changed" Unchecked="Transform_Changed"/>
+            
+            <CheckBox x:Name="ReflectXZCheck" Content="Отразить по XZ (инверсия Y)" 
+            Checked="Transform_Changed" Unchecked="Transform_Changed"/>
+
+            <CheckBox x:Name="ReflectYZCheck" Content="Отразить по YZ (инверсия X)" 
+            Checked="Transform_Changed" Unchecked="Transform_Changed"/>
+
+
+            <Button Content="Сбросить" Click="Reset_Click" Margin="0,15,0,0" Height="30"/>
+
+            <TextBlock Text="Статистика:" FontWeight="Bold" Margin="0,15,0,5"/>
+            <TextBlock x:Name="StatsText" TextWrapping="Wrap"/>
+        </StackPanel>
+
+        <Canvas x:Name="RenderCanvas" Grid.Column="1" Background="#F0F0F0" Margin="10"/>
+    </Grid>
+</Window>
