@@ -1,5 +1,4 @@
-﻿using lab6.Tests;
-using System.Configuration;
+﻿using System.Configuration;
 using System.Data;
 using System.Windows;
 
@@ -12,11 +11,6 @@ namespace lab6
     {
         protected override void OnStartup(StartupEventArgs e)
         {
-            base.OnStartup(e);
-            MatrixTests.RunAllTests();
-
-            var mainWindow = new MainWindow();
-            mainWindow.Show();
         }
     }
 

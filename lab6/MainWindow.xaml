@@ -5,93 +5,196 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:lab6"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="MainWindow"
+        WindowState="Maximized">
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="300"/>
-            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="300" />
+            <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
-        <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+        <ScrollViewer Grid.Column="0"
+                      VerticalScrollBarVisibility="Auto">
             <StackPanel Margin="10">
-                <TextBlock Text="Выбор фигуры:" FontWeight="Bold" Margin="0,0,0,5"/>
-                <ComboBox x:Name="ShapeSelector" SelectionChanged="ShapeSelector_Changed" SelectedIndex="1">
-                    <ComboBoxItem Content="Тетраэдр"/>
-                    <ComboBoxItem Content="Куб"/>
-                    <ComboBoxItem Content="Октаэдр"/>
-                    <ComboBoxItem Content="Икосаэдр"/>
+                <TextBlock Text="Выбор фигуры:"
+                           FontWeight="Bold"
+                           Margin="0,0,0,5" />
+                <ComboBox x:Name="ShapeSelector"
+                          SelectionChanged="ShapeSelector_Changed"
+                          SelectedIndex="1">
+                    <ComboBoxItem Content="Тетраэдр" />
+                    <ComboBoxItem Content="Куб" />
+                    <ComboBoxItem Content="Октаэдр" />
+                    <ComboBoxItem Content="Икосаэдр" />
                 </ComboBox>
 
-                <TextBlock Text="Смещение:" FontWeight="Bold" Margin="0,15,0,5"/>
+                <TextBlock Text="Смещение:"
+                           FontWeight="Bold"
+                           Margin="0,15,0,5" />
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition/>
-                        <ColumnDefinition/>
-                        <ColumnDefinition/>
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                        <ColumnDefinition />
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0">
-                        <TextBlock Text="X"/>
-                        <TextBox x:Name="TxBox" Text="0" Width="60"/>
+                        <TextBlock Text="X" />
+                        <TextBox x:Name="TxBox"
+                                 Text="0"
+                                 Width="60" />
                     </StackPanel>
                     <StackPanel Grid.Column="1">
-                        <TextBlock Text="Y"/>
-                        <TextBox x:Name="TyBox" Text="0" Width="60"/>
+                        <TextBlock Text="Y" />
+                        <TextBox x:Name="TyBox"
+                                 Text="0"
+                                 Width="60" />
                     </StackPanel>
                     <StackPanel Grid.Column="2">
-                        <TextBlock Text="Z"/>
-                        <TextBox x:Name="TzBox" Text="0" Width="60"/>
+                        <TextBlock Text="Z" />
+                        <TextBox x:Name="TzBox"
+                                 Text="0"
+                                 Width="60" />
                     </StackPanel>
                 </Grid>
-                <Button Content="Сместить" Click="ApplyTranslate_Click" Margin="0,5,0,0"/>
+                <Button Content="Сместить"
+                        Click="ApplyTranslate_Click"
+                        Margin="0,5,0,0" />
 
-                <TextBlock Text="Масштаб:" FontWeight="Bold" Margin="0,15,0,5"/>
-                <TextBox x:Name="ScaleBox" Text="1.2" Width="60"/>
-                <Button Content="Масштабировать" Click="ApplyScale_Click" Margin="0,5,0,0"/>
+                <TextBlock Text="Масштаб:"
+                           FontWeight="Bold"
+                           Margin="0,15,0,5" />
+                <TextBox x:Name="ScaleBox"
+                         Text="1.2"
+                         Width="60" />
+                <Button Content="Масштабировать"
+                        Click="ApplyScale_Click"
+                        Margin="0,5,0,0" />
 
-                <TextBlock Text="Поворот:" FontWeight="Bold" Margin="0,15,0,5"/>
+                <TextBlock Text="Поворот:"
+                           FontWeight="Bold"
+                           Margin="0,15,0,5" />
                 <StackPanel Orientation="Horizontal">
-                    <ComboBox x:Name="AxisCombo" SelectedIndex="1" Width="50">
-                        <ComboBoxItem Content="X"/>
-                        <ComboBoxItem Content="Y"/>
-                        <ComboBoxItem Content="Z"/>
+                    <ComboBox x:Name="AxisCombo"
+                              SelectedIndex="1"
+                              Width="50">
+                        <ComboBoxItem Content="X" />
+                        <ComboBoxItem Content="Y" />
+                        <ComboBoxItem Content="Z" />
                     </ComboBox>
-                    <TextBox x:Name="AxisAngleBox" Text="30" Width="50" Margin="10,0,0,0"/>
+                    <TextBox x:Name="AxisAngleBox"
+                             Text="30"
+                             Width="50"
+                             Margin="10,0,0,0" />
                 </StackPanel>
-                <Button Content="Повернуть" Click="ApplyAxisRotation_Click" Margin="0,5,0,0"/>
+                <Button Content="Повернуть"
+                        Click="ApplyAxisRotation_Click"
+                        Margin="0,5,0,0" />
 
-                <TextBlock Text="Отражение:" FontWeight="Bold" Margin="0,15,0,5"/>
-                <ComboBox x:Name="ReflectCombo" SelectedIndex="0">
-                    <ComboBoxItem Content="XY"/>
-                    <ComboBoxItem Content="XZ"/>
-                    <ComboBoxItem Content="YZ"/>
+                <TextBlock Text="Отражение:"
+                           FontWeight="Bold"
+                           Margin="0,15,0,5" />
+                <ComboBox x:Name="ReflectCombo"
+                          SelectedIndex="0">
+                    <ComboBoxItem Content="XY" />
+                    <ComboBoxItem Content="XZ" />
+                    <ComboBoxItem Content="YZ" />
                 </ComboBox>
-                <Button Content="Отразить" Click="ApplyReflect_Click" Margin="0,5,0,0"/>
+                <Button Content="Отразить"
+                        Click="ApplyReflect_Click"
+                        Margin="0,5,0,0" />
 
-                <Button Content="Сбросить" Click="Reset_Click" Margin="0,20,0,0" Height="30"/>
+                <Button Content="Сбросить"
+                        Click="Reset_Click"
+                        Margin="0,20,0,0"
+                        Height="30" />
 
-                <TextBlock Text="Проекция:" FontWeight="Bold" Margin="0,15,0,5"/>
-                <ComboBox x:Name="ProjectionCombo" SelectedIndex="0" SelectionChanged="ProjectionCombo_SelectionChanged">
-                    <ComboBoxItem Content="Перспективная"/>
-                    <ComboBoxItem Content="Аксонометрическая (Ортографическая)"/>
+                <TextBlock Text="Проекция:"
+                           FontWeight="Bold"
+                           Margin="0,15,0,5" />
+                <ComboBox x:Name="ProjectionCombo"
+                          SelectedIndex="0"
+                          SelectionChanged="ProjectionCombo_SelectionChanged">
+                    <ComboBoxItem Content="Перспективная" />
+                    <ComboBoxItem Content="Аксонометрическая (Ортографическая)" />
                 </ComboBox>
 
-                <TextBlock Text="Вращение вокруг центр. оси:" FontWeight="Bold" Margin="0,15,0,5"/>
-                <Button Content="Повернуть вокруг центра" Click="ApplyCenterAxisRotation_Click" Height="25"/>
+                <TextBlock Text="Вращение вокруг центр. оси:"
+                           FontWeight="Bold"
+                           Margin="0,15,0,5" />
+                <Button Content="Повернуть вокруг центра"
+                        Click="ApplyCenterAxisRotation_Click"
+                        Height="25" />
 
+                <TextBlock Text="Поворот вокруг произвольной прямой:"
+                           FontWeight="Bold"
+                           Margin="0,15,0,5" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="P1 x,y,z" />
+                        <TextBox x:Name="P1x"
+                                 Text="0"
+                                 Width="55" />
+                        <TextBox x:Name="P1y"
+                                 Text="0"
+                                 Width="55" />
+                        <TextBox x:Name="P1z"
+                                 Text="0"
+                                 Width="55" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="P2 x,y,z" />
+                        <TextBox x:Name="P2x"
+                                 Text="1"
+                                 Width="55" />
+                        <TextBox x:Name="P2y"
+                                 Text="1"
+                                 Width="55" />
+                        <TextBox x:Name="P2z"
+                                 Text="1"
+                                 Width="55" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="Угол" />
+                        <TextBox x:Name="ArbitraryAngleBox"
+                                 Text="30"
+                                 Width="55" />
+                    </StackPanel>
+                </Grid>
+                <Button Content="Повернуть вокруг прямой"
+                        Click="ApplyArbitraryAxisRotation_Click"
+                        Margin="0,5,0,0"
+                        Height="25" />
+                <CheckBox x:Name="ShowAxisCheckBox"
+                          Content="Показывать ось вращения"
+                          Margin="0,5,0,0"
+                          Checked="ShowAxisCheckBox_Changed"
+                          Unchecked="ShowAxisCheckBox_Changed" />
 
-                <TextBlock x:Name="StatsText" Margin="0,15,0,0"/>
+                <TextBlock x:Name="StatsText"
+                           Margin="0,15,0,0" />
             </StackPanel>
         </ScrollViewer>
 
-        <Viewport3D x:Name="Viewport" Grid.Column="1">
+        <Viewport3D x:Name="Viewport"
+                    Grid.Column="1">
             <Viewport3D.Camera>
-                <PerspectiveCamera x:Name="Camera3D" Position="0,0,4.5" LookDirection="0,0,-1" UpDirection="0,1,0" FieldOfView="60"/>
+                <PerspectiveCamera x:Name="Camera3D"
+                                   Position="0,0,4.5"
+                                   LookDirection="0,0,-1"
+                                   UpDirection="0,1,0"
+                                   FieldOfView="60" />
             </Viewport3D.Camera>
             <ModelVisual3D>
                 <ModelVisual3D.Content>
                     <Model3DGroup x:Name="ModelGroup">
-                        <AmbientLight Color="#555555"/>
-                        <DirectionalLight Color="#FFFFFF" Direction="-0.5,-1,-0.5"/>
+                        <AmbientLight Color="#555555" />
+                        <DirectionalLight Color="#FFFFFF"
+                                          Direction="-0.5,-1,-0.5" />
                     </Model3DGroup>
                 </ModelVisual3D.Content>
             </ModelVisual3D>

@@ -170,5 +170,35 @@ namespace lab6.Core
             };
         }
 
+        public static Matrix4x4 RotateAroundAxis(Point axisPoint1, Point axisPoint2, double angleRad)
+        {
+            double dx = axisPoint2.X - axisPoint1.X;
+            double dy = axisPoint2.Y - axisPoint1.Y;
+            double dz = axisPoint2.Z - axisPoint1.Z;
+            double len = Math.Sqrt(dx * dx + dy * dy + dz * dz);
+            if (len < 1e-10) return Identity;
+
+            double ux = dx / len, uy = dy / len, uz = dz / len;
+            double c = Math.Cos(angleRad), s = Math.Sin(angleRad);
+            double t = 1 - c;
+
+            var r = new Matrix4x4
+            {
+                M11 = t * ux * ux + c,
+                M12 = t * ux * uy + s * uz,
+                M13 = t * ux * uz - s * uy,
+                M21 = t * ux * uy - s * uz,
+                M22 = t * uy * uy + c,
+                M23 = t * uy * uz + s * ux,
+                M31 = t * ux * uz + s * uy,
+                M32 = t * uy * uz - s * ux,
+                M33 = t * uz * uz + c,
+                M44 = 1
+            };
+
+            return Translate(-axisPoint1.X, -axisPoint1.Y, -axisPoint1.Z)
+                 * r
+                 * Translate(axisPoint1.X, axisPoint1.Y, axisPoint1.Z);
+        }
     }
 }

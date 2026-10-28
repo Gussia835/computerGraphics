@@ -32,5 +32,22 @@ namespace lab6.Core
             clone.Faces.AddRange(Faces);
             return clone;
         }
+
+        public List<(int A, int B)> GetEdges()
+        {
+            var edges = new HashSet<(int, int)>();
+            foreach (var face in Faces)
+            {
+                var idx = face.VertexIndices;
+                for (int i = 0; i < idx.Length; i++)
+                {
+                    int a = idx[i];
+                    int b = idx[(i + 1) % idx.Length];
+                    var key = a < b ? (a, b) : (b, a);
+                    edges.Add(key);
+                }
+            }
+            return edges.ToList();
+        }
     }
 }
