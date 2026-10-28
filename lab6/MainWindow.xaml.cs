@@ -30,6 +30,7 @@ namespace lab6
                 case 1: _originalPoly = PolyhedronFactory.CreateCube(); break;
                 case 2: _originalPoly = PolyhedronFactory.CreateOctahedron(); break;
                 case 3: _originalPoly = PolyhedronFactory.CreateIcosahedron(); break;
+                case 4: _originalPoly = PolyhedronFactory.CreateDodecahedron(); break;
             }
             _modelMatrix = Matrix4x4.Identity;
             UpdateStats();

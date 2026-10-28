@@ -26,6 +26,7 @@
                     <ComboBoxItem Content="Куб" />
                     <ComboBoxItem Content="Октаэдр" />
                     <ComboBoxItem Content="Икосаэдр" />
+                    <ComboBoxItem Content="Додекаэдр" />
                 </ComboBox>
 
                 <TextBlock Text="Смещение:"
