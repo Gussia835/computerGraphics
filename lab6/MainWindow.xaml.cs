@@ -291,5 +291,55 @@ namespace lab6
             _renderMode = ModeSelector.SelectedIndex; 
             Render();
         }
+
+        private void BuildSurface_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                double xMin = ReadDouble(XMinBox, -3);
+                double xMax = ReadDouble(XMaxBox, 3);
+                double yMin = ReadDouble(YMinBox, -3);
+                double yMax = ReadDouble(YMaxBox, 3);
+
+                int stepsX = int.TryParse(StepsXBox.Text, out int sx) ? Math.Max(1, sx) : 20;
+                int stepsY = int.TryParse(StepsYBox.Text, out int sy) ? Math.Max(1, sy) : 20;
+
+                Func<double, double, double> function;
+                switch (FormulaCombo.SelectedIndex)
+                {
+                    case 0: // Параболоид
+                        function = (x, y) => (x * x + y * y) / 2.0; // Делим на 2, чтобы не было слишком высоко
+                        break;
+                    case 1: // Волны
+                        function = (x, y) => Math.Sin(x * 1.5) * Math.Cos(y * 1.5) * 2.0;
+                        break;
+                    case 2: // Седло
+                        function = (x, y) => (x * x - y * y) / 2.0;
+                        break;
+                    case 3: // Кратер
+                        function = (x, y) => -Math.Sin(Math.Sqrt(x * x + y * y)) * 3.0;
+                        break;
+                    case 4: // Плоскость
+                        function = (x, y) => (x + y) / 2.0;
+                        break;
+                    default:
+                        function = (x, y) => x * x + y * y;
+                        break;
+                }
+
+                
+                _originalPoly = SurfaceGenerator.CreateSurface(function, xMin, xMax, yMin, yMax, stepsX, stepsY);
+
+
+                _modelMatrix = Matrix4x4.Identity;
+
+                UpdateStats();
+                Render();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при построении поверхности: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
     }
 }
