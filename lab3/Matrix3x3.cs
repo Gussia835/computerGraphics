@@ -40,7 +40,7 @@ namespace lab3
                 {
                     for (int k = 0; k < 3; k++)
                     {
-                        // ИСПРАВЛЕНИЕ 2: Добавлен знак += для накопления суммы произведений.
+                        
                         res.Data[i, j] += a.Data[i, k] * b.Data[k, j];
                     }
                 }
@@ -70,7 +70,7 @@ namespace lab3
             });
         }
 
-        // Поворот вокруг НАЧАЛА КООРДИНАТ на угол (в радианах)
+        // Поворот вокруг начала на угол (в радианах)
         public static Matrix3x3 Rotation(double angleRad)
         {
             double c = Math.Cos(angleRad);

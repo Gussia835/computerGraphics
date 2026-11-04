@@ -13,12 +13,34 @@ namespace lab6
         private Polyhedron _originalPoly;
         private Matrix4x4 _modelMatrix = Matrix4x4.Identity;
 
+        private Renderer _renderer;
+        private int _renderMode = 1;
+
         public MainWindow()
         {
             InitializeComponent();
             _originalPoly = PolyhedronFactory.CreateCube();
             UpdateStats();
-            Render3D();
+
+            this.Loaded += MainWindow_Loaded;
+        }
+
+        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            Dispatcher.InvokeAsync(() =>
+            {
+                int w = (int)RenderImage.ActualWidth;
+                int h = (int)RenderImage.ActualHeight;
+
+                if (w <= 0 || h <= 0)
+                {
+                    w = 600;
+                    h = 600;
+                }
+
+                _renderer = new Renderer(w, h);
+                Render();
+            });
         }
 
         private void ShapeSelector_Changed(object sender, SelectionChangedEventArgs e)
@@ -34,14 +56,14 @@ namespace lab6
             }
             _modelMatrix = Matrix4x4.Identity;
             UpdateStats();
-            Render3D();
+            Render();
         }
 
         private void ApplyTranslate_Click(object sender, RoutedEventArgs e)
         {
             double dx = ReadDouble(TxBox, 0), dy = ReadDouble(TyBox, 0), dz = ReadDouble(TzBox, 0);
             _modelMatrix = _modelMatrix * Matrix4x4.Translate(dx, dy, dz);
-            Render3D();
+            Render();
         }
 
         private void ApplyScale_Click(object sender, RoutedEventArgs e)
@@ -59,7 +81,7 @@ namespace lab6
                   * Matrix4x4.Translate(center.X, center.Y, center.Z);
 
             _modelMatrix = _modelMatrix * m;
-            Render3D();
+            Render();
         }
 
         private void ApplyAxisRotation_Click(object sender, RoutedEventArgs e)
@@ -73,7 +95,7 @@ namespace lab6
             else { m.M11 = cos; m.M12 = -sin; m.M21 = sin; m.M22 = cos; }
 
             _modelMatrix = _modelMatrix * m;
-            Render3D();
+            Render();
         }
 
         private void ApplyReflect_Click(object sender, RoutedEventArgs e)
@@ -84,42 +106,19 @@ namespace lab6
             else m = Matrix4x4.ReflectYZ();
 
             _modelMatrix = _modelMatrix * m;
-            Render3D();
+            Render();
         }
 
         private void Reset_Click(object sender, RoutedEventArgs e)
         {
             _modelMatrix = Matrix4x4.Identity;
-            Render3D();
+            Render();
         }
 
         private void ProjectionCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (!IsLoaded || Viewport == null) return;
-
-            if (ProjectionCombo.SelectedIndex == 0)
-            {
-                var pCamera = new PerspectiveCamera
-                {
-                    Position = new Point3D(0, 0, 4.5),
-                    LookDirection = new Vector3D(0, 0, -1),
-                    UpDirection = new Vector3D(0, 1, 0),
-                    FieldOfView = 60
-                };
-                Viewport.Camera = pCamera;
-                Camera3D = pCamera;
-            }
-            else
-            {
-                var oCamera = new OrthographicCamera
-                {
-                    Position = new Point3D(0, 0, 4.5),
-                    LookDirection = new Vector3D(0, 0, -1),
-                    UpDirection = new Vector3D(0, 1, 0),
-                    Width = 3.0
-                };
-                Viewport.Camera = oCamera;
-            }
+            if (!IsLoaded) return;
+            Render(); 
         }
 
         private void ApplyCenterAxisRotation_Click(object sender, RoutedEventArgs e)
@@ -150,8 +149,9 @@ namespace lab6
                                         * Matrix4x4.Translate(center.X, center.Y, center.Z);
 
             _modelMatrix = _modelMatrix * transformMatrix;
-            Render3D();
+            Render();
         }
+
 
         private void ApplyArbitraryAxisRotation_Click(object sender, RoutedEventArgs e)
         {
@@ -168,12 +168,12 @@ namespace lab6
 
             var m = Matrix4x4.RotateAroundAxis(p1, p2, rad);
             _modelMatrix = _modelMatrix * m;
-            Render3D();
+            Render();
         }
 
         private void ShowAxisCheckBox_Changed(object sender, RoutedEventArgs e)
         {
-            Render3D();
+            Render();
         }
 
         private double ReadDouble(TextBox tb, double def)
@@ -192,58 +192,22 @@ namespace lab6
             StatsText.Text = $"Вершин: {_originalPoly.Vertices.Count}\nГраней: {_originalPoly.Faces.Count}";
         }
 
-        private void Render3D()
+        private void Render()
         {
-            if (_originalPoly == null) return;
+            if (_originalPoly == null || _renderer == null) return;
 
-            while (ModelGroup.Children.Count > 2)
-                ModelGroup.Children.RemoveAt(2);
+            bool isPerspective = (ProjectionCombo.SelectedIndex == 0);
 
-            var mesh = new MeshGeometry3D();
+            // Вызываем наш ручной рендерер, который вернет готовый Bitmap
+            var bitmap = _renderer.RenderPolyhedron(
+                _originalPoly,
+                _modelMatrix,
+                isPerspective,
+                _renderMode
+            );
 
-            foreach (var v in _originalPoly.Vertices)
-            {
-                var transformed = v.Transform(_modelMatrix);
-                mesh.Positions.Add(new System.Windows.Media.Media3D.Point3D(transformed.X, transformed.Y, transformed.Z));
-            }
-
-            var indices = new Int32Collection();
-            foreach (var face in _originalPoly.Faces)
-            {
-                for (int i = 1; i < face.VertexIndices.Length - 1; i++)
-                {
-                    indices.Add(face.VertexIndices[0]);
-                    indices.Add(face.VertexIndices[i]);
-                    indices.Add(face.VertexIndices[i + 1]);
-                }
-            }
-            mesh.TriangleIndices = indices;
-
-            var material = new DiffuseMaterial(new SolidColorBrush(Color.FromRgb(100, 150, 220)));
-            var geoModel = new GeometryModel3D(mesh, material);
-            geoModel.BackMaterial = material;
-
-            ModelGroup.Children.Add(geoModel);
-
-            var edgeModel = CreateEdgesModel(mesh.Positions);
-            if (edgeModel != null)
-                ModelGroup.Children.Add(edgeModel);
-
-            if (ShowAxisCheckBox.IsChecked == true)
-            {
-                var p1 = new lab6.Core.Point(
-                    ReadDoubleSafe(P1x, 0),
-                    ReadDoubleSafe(P1y, 0),
-                    ReadDoubleSafe(P1z, 0));
-                var p2 = new lab6.Core.Point(
-                    ReadDoubleSafe(P2x, 0),
-                    ReadDoubleSafe(P2y, 0),
-                    ReadDoubleSafe(P2z, 0));
-
-                var axisModel = CreateAxisModel(p1, p2);
-                if (axisModel != null)
-                    ModelGroup.Children.Add(axisModel);
-            }
+            // Выводим результат на экран
+            RenderImage.Source = bitmap;
         }
 
         private GeometryModel3D CreateEdgesModel(Point3DCollection positions)
@@ -320,6 +284,12 @@ namespace lab6
             };
             foreach (var f in faces)
                 mesh.TriangleIndices.Add(start + f);
+        }
+
+        private void ModeSelector_Changed(object sender, SelectionChangedEventArgs e)
+        {
+            _renderMode = ModeSelector.SelectedIndex; 
+            Render();
         }
     }
 }

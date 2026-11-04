@@ -236,7 +236,7 @@ namespace BezierSpline
 
                     for (int i = 0; i <= 500; i++)
                     {
-                        double t = (double)i / 500.0;
+                        double t = (double)i / 500;
                         Point curvePoint = CalculateCubicBezier(p0, p1, p2, p3, t);
                         curvePoints.Add(curvePoint);
                     }

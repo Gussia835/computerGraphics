@@ -13,6 +13,7 @@
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
+        <!-- ЛЕВАЯ ПАНЕЛЬ С УПРАВЛЕНИЕМ -->
         <ScrollViewer Grid.Column="0"
                       VerticalScrollBarVisibility="Auto">
             <StackPanel Margin="10">
@@ -104,10 +105,18 @@
                         Click="ApplyReflect_Click"
                         Margin="0,5,0,0" />
 
+                <TextBlock Text="Режим отрисовки:" FontWeight="Bold" Margin="0,15,0,5" />
+                <ComboBox x:Name="ModeSelector" SelectionChanged="ModeSelector_Changed" SelectedIndex="1">
+                    <ComboBoxItem Content="Каркас (Wireframe)" />
+                    <ComboBoxItem Content="Заливка (Filled)" />
+                    <ComboBoxItem Content="Каркас + Заливка" />
+                </ComboBox>
+
                 <Button Content="Сбросить"
                         Click="Reset_Click"
                         Margin="0,20,0,0"
                         Height="30" />
+
 
                 <TextBlock Text="Проекция:"
                            FontWeight="Bold"
@@ -181,24 +190,11 @@
             </StackPanel>
         </ScrollViewer>
 
-        <Viewport3D x:Name="Viewport"
-                    Grid.Column="1">
-            <Viewport3D.Camera>
-                <PerspectiveCamera x:Name="Camera3D"
-                                   Position="0,0,4.5"
-                                   LookDirection="0,0,-1"
-                                   UpDirection="0,1,0"
-                                   FieldOfView="60" />
-            </Viewport3D.Camera>
-            <ModelVisual3D>
-                <ModelVisual3D.Content>
-                    <Model3DGroup x:Name="ModelGroup">
-                        <AmbientLight Color="#555555" />
-                        <DirectionalLight Color="#FFFFFF"
-                                          Direction="-0.5,-1,-0.5" />
-                    </Model3DGroup>
-                </ModelVisual3D.Content>
-            </ModelVisual3D>
-        </Viewport3D>
+        <Image x:Name="RenderImage" 
+               Grid.Column="1" 
+                Margin="10" 
+                Stretch="Uniform" 
+                SnapsToDevicePixels="True"/>
+
     </Grid>
 </Window>

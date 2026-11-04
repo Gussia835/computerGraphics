@@ -200,5 +200,31 @@ namespace lab6.Core
                  * r
                  * Translate(axisPoint1.X, axisPoint1.Y, axisPoint1.Z);
         }
+
+        public static Matrix4x4 PerspectiveProjection(double distance)
+        {
+            return new Matrix4x4
+            {
+                M11 = 1,
+                M22 = 1,
+                M33 = 1,
+                M34 = 1.0 / distance,
+                M41 = 0,
+                M42 = 0,
+                M43 = distance,  
+                M44 = 0
+            };
+        }
+
+        public static Matrix4x4 OrthographicProjection()
+        {
+            return new Matrix4x4
+            {
+                M11 = 1,
+                M22 = 1,
+                M33 = 1,
+                M44 = 1 
+            };
+        }
     }
 }
