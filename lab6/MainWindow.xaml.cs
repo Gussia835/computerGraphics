@@ -340,6 +340,61 @@ namespace lab6
             {
                 MessageBox.Show($"Ошибка при построении поверхности: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+
         }
-    }
-}
+        
+
+        private void LoadObj_Click(object sender, RoutedEventArgs e)
+        {
+            var openFileDialog = new Microsoft.Win32.OpenFileDialog();
+            openFileDialog.Filter = "Wavefront OBJ (*.obj)|*.obj";
+            openFileDialog.Title = "Открыть 3D-модель (Часть А)";
+
+            if (openFileDialog.ShowDialog() == true)
+            {
+                try
+                {
+                    _originalPoly = lab6.Core.ObjIO.LoadFromOBJ(openFileDialog.FileName);
+                    _modelMatrix = Matrix4x4.Identity;
+
+                    UpdateStats();
+                    Render();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Ошибка загрузки файла OBJ: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+        private void SaveObj_Click(object sender, RoutedEventArgs e)
+        {
+            if (_originalPoly == null)
+            {
+                MessageBox.Show("Нет активной модели для сохранения!", "Предупреждение", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var saveFileDialog = new Microsoft.Win32.SaveFileDialog();
+            saveFileDialog.Filter = "Wavefront OBJ (*.obj)|*.obj";
+            saveFileDialog.Title = "Сохранить 3D-модель (Часть А)";
+            saveFileDialog.FileName = "exported_model.obj";
+
+            if (saveFileDialog.ShowDialog() == true)
+            {
+                try
+                {
+                    var polyToSave = _originalPoly.Clone();
+                    polyToSave.ApplyTransform(_modelMatrix);
+
+                    lab6.Core.ObjIO.SaveToOBJ(saveFileDialog.FileName, polyToSave);
+                    MessageBox.Show("Модель успешно сохранена в OBJ!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Ошибка при сохранении: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+    } 
+} 
