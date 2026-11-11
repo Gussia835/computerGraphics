@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -118,7 +119,7 @@ namespace lab6
         private void ProjectionCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (!IsLoaded) return;
-            Render(); 
+            Render();
         }
 
         private void ApplyCenterAxisRotation_Click(object sender, RoutedEventArgs e)
@@ -187,6 +188,11 @@ namespace lab6
             return double.TryParse(tb.Text.Replace('.', ','), out var v) ? v : def;
         }
 
+        private double ReadDoubleSafeFromString(string s, double def)
+        {
+            return double.TryParse(s.Replace('.', ','), out var v) ? v : def;
+        }
+
         private void UpdateStats()
         {
             StatsText.Text = $"Вершин: {_originalPoly.Vertices.Count}\nГраней: {_originalPoly.Faces.Count}";
@@ -198,7 +204,6 @@ namespace lab6
 
             bool isPerspective = (ProjectionCombo.SelectedIndex == 0);
 
-            // Вызываем наш ручной рендерер, который вернет готовый Bitmap
             var bitmap = _renderer.RenderPolyhedron(
                 _originalPoly,
                 _modelMatrix,
@@ -206,7 +211,6 @@ namespace lab6
                 _renderMode
             );
 
-            // Выводим результат на экран
             RenderImage.Source = bitmap;
         }
 
@@ -288,7 +292,7 @@ namespace lab6
 
         private void ModeSelector_Changed(object sender, SelectionChangedEventArgs e)
         {
-            _renderMode = ModeSelector.SelectedIndex; 
+            _renderMode = ModeSelector.SelectedIndex;
             Render();
         }
 
@@ -307,19 +311,19 @@ namespace lab6
                 Func<double, double, double> function;
                 switch (FormulaCombo.SelectedIndex)
                 {
-                    case 0: // Параболоид
-                        function = (x, y) => (x * x + y * y) / 2.0; // Делим на 2, чтобы не было слишком высоко
+                    case 0:
+                        function = (x, y) => (x * x + y * y) / 2.0;
                         break;
-                    case 1: // Волны
+                    case 1:
                         function = (x, y) => Math.Sin(x * 1.5) * Math.Cos(y * 1.5) * 2.0;
                         break;
-                    case 2: // Седло
+                    case 2:
                         function = (x, y) => (x * x - y * y) / 2.0;
                         break;
-                    case 3: // Кратер
+                    case 3:
                         function = (x, y) => -Math.Sin(Math.Sqrt(x * x + y * y)) * 3.0;
                         break;
-                    case 4: // Плоскость
+                    case 4:
                         function = (x, y) => (x + y) / 2.0;
                         break;
                     default:
@@ -327,9 +331,7 @@ namespace lab6
                         break;
                 }
 
-                
                 _originalPoly = SurfaceGenerator.CreateSurface(function, xMin, xMax, yMin, yMax, stepsX, stepsY);
-
 
                 _modelMatrix = Matrix4x4.Identity;
 
@@ -342,7 +344,53 @@ namespace lab6
             }
 
         }
-        
+
+        private void BuildRevolution_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                int divisions = int.TryParse(RevolutionDivisionsBox.Text, out int div) ? Math.Max(3, div) : 24;
+
+                int axis = RevolutionAxisCombo.SelectedIndex;
+
+                var generatrix = new List<lab6.Core.Point>();
+                string[] pairs = GeneratrixBox.Text.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+
+                foreach (var pair in pairs)
+                {
+                    string[] coords = pair.Trim().Split(new[] { ' ', ',' }, StringSplitOptions.RemoveEmptyEntries);
+                    if (coords.Length >= 2)
+                    {
+                        double c1 = ReadDoubleSafeFromString(coords[0], 0);
+                        double c2 = ReadDoubleSafeFromString(coords[1], 0);
+
+                        if (axis == 0)
+                            generatrix.Add(new lab6.Core.Point(0, c1, c2));
+                        else if (axis == 1)
+                            generatrix.Add(new lab6.Core.Point(c1, 0, c2));
+                        else
+                            generatrix.Add(new lab6.Core.Point(c1, c2, 0));
+                    }
+                }
+
+                if (generatrix.Count < 2)
+                {
+                    MessageBox.Show("Введите хотя бы 2 точки для образующей (формат: 'x z; x z' или 'x y; x y').", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                _originalPoly = SurfaceOfRevolutionGenerator.CreateRevolution(generatrix, axis, divisions);
+
+                _modelMatrix = Matrix4x4.Identity;
+
+                UpdateStats();
+                Render();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при построении фигуры вращения: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
 
         private void LoadObj_Click(object sender, RoutedEventArgs e)
         {
@@ -396,5 +444,5 @@ namespace lab6
                 }
             }
         }
-    } 
-} 
+    }
+}

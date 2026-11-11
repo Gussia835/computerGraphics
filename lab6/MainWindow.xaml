@@ -13,7 +13,6 @@
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
-        <!-- ЛЕВАЯ ПАНЕЛЬ С УПРАВЛЕНИЕМ -->
         <ScrollViewer Grid.Column="0"
                       VerticalScrollBarVisibility="Auto">
             <StackPanel Margin="10">
@@ -105,8 +104,12 @@
                         Click="ApplyReflect_Click"
                         Margin="0,5,0,0" />
 
-                <TextBlock Text="Режим отрисовки:" FontWeight="Bold" Margin="0,15,0,5" />
-                <ComboBox x:Name="ModeSelector" SelectionChanged="ModeSelector_Changed" SelectedIndex="1">
+                <TextBlock Text="Режим отрисовки:"
+                           FontWeight="Bold"
+                           Margin="0,15,0,5" />
+                <ComboBox x:Name="ModeSelector"
+                          SelectionChanged="ModeSelector_Changed"
+                          SelectedIndex="1">
                     <ComboBoxItem Content="Каркас (Wireframe)" />
                     <ComboBoxItem Content="Заливка (Filled)" />
                     <ComboBoxItem Content="Каркас + Заливка" />
@@ -116,7 +119,6 @@
                         Click="Reset_Click"
                         Margin="0,20,0,0"
                         Height="30" />
-
 
                 <TextBlock Text="Проекция:"
                            FontWeight="Bold"
@@ -188,90 +190,149 @@
                 <TextBlock x:Name="StatsText"
                            Margin="0,15,0,0" />
 
+                <TextBlock Text="Поверхность z=f(x,y):"
+                           FontWeight="Bold"
+                           Margin="0,20,0,5"
+                           Foreground="DarkBlue" />
 
-                <TextBlock Text="Поверхность z=f(x,y):" FontWeight="Bold" Margin="0,20,0,5" Foreground="DarkBlue"/>
-
-                <TextBlock Text="Формула:"/>
-                <ComboBox x:Name="FormulaCombo" SelectedIndex="0">
-                    <ComboBoxItem Content="Параболоид: x² + y²"/>
-                    <ComboBoxItem Content="Волны: sin(x)*cos(y)"/>
-                    <ComboBoxItem Content="Седло: x² - y²"/>
-                    <ComboBoxItem Content="Кратер: -sin(√(x²+y²))"/>
-                    <ComboBoxItem Content="Плоскость: x + y"/>
+                <TextBlock Text="Формула:" />
+                <ComboBox x:Name="FormulaCombo"
+                          SelectedIndex="0">
+                    <ComboBoxItem Content="Параболоид: x² + y²" />
+                    <ComboBoxItem Content="Волны: sin(x)*cos(y)" />
+                    <ComboBoxItem Content="Седло: x² - y²" />
+                    <ComboBoxItem Content="Кратер: -sin(√(x²+y²))" />
+                    <ComboBoxItem Content="Плоскость: x + y" />
                 </ComboBox>
 
                 <Grid Margin="0,5,0,0">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition/>
-                        <ColumnDefinition/>
+                        <ColumnDefinition />
+                        <ColumnDefinition />
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0">
-                        <TextBlock Text="X от:"/>
-                        <TextBox x:Name="XMinBox" Text="-3" Width="60"/>
-                        <TextBlock Text="X до:" Margin="0,5,0,0"/>
-                        <TextBox x:Name="XMaxBox" Text="3" Width="60"/>
+                        <TextBlock Text="X от:" />
+                        <TextBox x:Name="XMinBox"
+                                 Text="-3"
+                                 Width="60" />
+                        <TextBlock Text="X до:"
+                                   Margin="0,5,0,0" />
+                        <TextBox x:Name="XMaxBox"
+                                 Text="3"
+                                 Width="60" />
                     </StackPanel>
                     <StackPanel Grid.Column="1">
-                        <TextBlock Text="Y от:"/>
-                        <TextBox x:Name="YMinBox" Text="-3" Width="60"/>
-                        <TextBlock Text="Y до:" Margin="0,5,0,0"/>
-                        <TextBox x:Name="YMaxBox" Text="3" Width="60"/>
+                        <TextBlock Text="Y от:" />
+                        <TextBox x:Name="YMinBox"
+                                 Text="-3"
+                                 Width="60" />
+                        <TextBlock Text="Y до:"
+                                   Margin="0,5,0,0" />
+                        <TextBox x:Name="YMaxBox"
+                                 Text="3"
+                                 Width="60" />
                     </StackPanel>
                 </Grid>
 
-                <TextBlock Text="Детализация (шаги):" Margin="0,10,0,0"/>
+                <TextBlock Text="Детализация (шаги):"
+                           Margin="0,10,0,0" />
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition/>
-                        <ColumnDefinition/>
+                        <ColumnDefinition />
+                        <ColumnDefinition />
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0">
-                        <TextBlock Text="По X:"/>
-                        <TextBox x:Name="StepsXBox" Text="20" Width="60"/>
+                        <TextBlock Text="По X:" />
+                        <TextBox x:Name="StepsXBox"
+                                 Text="20"
+                                 Width="60" />
                     </StackPanel>
                     <StackPanel Grid.Column="1">
-                        <TextBlock Text="По Y:"/>
-                        <TextBox x:Name="StepsYBox" Text="20" Width="60"/>
+                        <TextBlock Text="По Y:" />
+                        <TextBox x:Name="StepsYBox"
+                                 Text="20"
+                                 Width="60" />
                     </StackPanel>
                 </Grid>
 
-                <Button Content="🚀 Построить поверхность" 
-                    Click="BuildSurface_Click" 
-                    Margin="0,10,0,0" 
-                    Height="30" 
-                    FontWeight="Bold" 
-                    Background="LightGreen"/>
+                <Button Content="🚀 Построить поверхность"
+                        Click="BuildSurface_Click"
+                        Margin="0,10,0,0"
+                        Height="30"
+                        FontWeight="Bold"
+                        Background="LightGreen" />
 
-                <Grid>
+                <TextBlock Text="Фигура вращения:"
+                           FontWeight="Bold"
+                           Margin="0,20,0,5"
+                           Foreground="DarkBlue" />
+
+                <TextBlock Text="Образующая (x z через ;):" />
+                <TextBox x:Name="GeneratrixBox"
+                         Text="1 0; 2 1; 1 2; 0.5 1.5"
+                         Height="40"
+                         TextWrapping="Wrap"
+                         AcceptsReturn="True" />
+
+                <Grid Margin="0,5,0,0">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition/>
-                        <ColumnDefinition/>
+                        <ColumnDefinition />
+                        <ColumnDefinition />
                     </Grid.ColumnDefinitions>
-                    <Button Grid.Column="0" 
-                            Content="📂 Загрузить OBJ" 
-                            Click="LoadObj_Click" 
-                            Margin="0,0,5,0" 
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="Ось вращения:" />
+                        <ComboBox x:Name="RevolutionAxisCombo"
+                                  SelectedIndex="1">
+                            <ComboBoxItem Content="X" />
+                            <ComboBoxItem Content="Y" />
+                            <ComboBoxItem Content="Z" />
+                        </ComboBox>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="Разбиений:" />
+                        <TextBox x:Name="RevolutionDivisionsBox"
+                                 Text="24"
+                                 Width="60" />
+                    </StackPanel>
+                </Grid>
+
+                <Button Content="🌀 Построить фигуру вращения"
+                        Click="BuildRevolution_Click"
+                        Margin="0,10,0,0"
+                        Height="30"
+                        FontWeight="Bold"
+                        Background="LightBlue" />
+
+                <Grid Margin="0,10,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <Button Grid.Column="0"
+                            Content="📂 Загрузить OBJ"
+                            Click="LoadObj_Click"
+                            Margin="0,0,5,0"
                             Height="30"
-                            FontWeight="Bold"/>
-                    <Button Grid.Column="1" 
-                            Content="💾 Сохранить OBJ" 
-                            Click="SaveObj_Click" 
-                            Margin="5,0,0,0" 
+                            FontWeight="Bold" />
+                    <Button Grid.Column="1"
+                            Content="💾 Сохранить OBJ"
+                            Click="SaveObj_Click"
+                            Margin="5,0,0,0"
                             Height="30"
-                            FontWeight="Bold"/>
+                            FontWeight="Bold" />
                 </Grid>
 
             </StackPanel>
-            
-            
-            
+
+
+
         </ScrollViewer>
 
-        <Image x:Name="RenderImage" 
-               Grid.Column="1" 
-                Margin="10" 
-                Stretch="Uniform" 
-                SnapsToDevicePixels="True"/>
-        
+        <Image x:Name="RenderImage"
+               Grid.Column="1"
+               Margin="10"
+               Stretch="Uniform"
+               SnapsToDevicePixels="True" />
+
     </Grid>
 </Window>
