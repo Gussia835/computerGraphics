@@ -57,6 +57,7 @@ namespace lab6
             }
             _modelMatrix = Matrix4x4.Identity;
             UpdateStats();
+            _renderer.EnableBackfaceCulling = true; 
             Render();
         }
 
@@ -336,6 +337,7 @@ namespace lab6
                 _modelMatrix = Matrix4x4.Identity;
 
                 UpdateStats();
+                _renderer.EnableBackfaceCulling = false;
                 Render();
             }
             catch (Exception ex)

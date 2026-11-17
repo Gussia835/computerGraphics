@@ -26,7 +26,7 @@ namespace lab6.Core.Primitives
 
             int pointsPerRow = stepsX + 1; 
 
-            // ШАГ 1: Генерация вершин (точек)
+            // Генерация вершин (точек)
             for (int j = 0; j <= stepsY; j++) 
             {
                 double y = yMin + j * stepY;
