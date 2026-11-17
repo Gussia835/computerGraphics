@@ -6,6 +6,7 @@ using System.Windows.Media;
 using System.Windows.Media.Media3D;
 using lab6.Core;
 using lab6.Core.Primitives;
+using lab6.scene;
 
 namespace lab6
 {
@@ -345,6 +346,22 @@ namespace lab6
                 MessageBox.Show($"Ошибка при построении поверхности: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
 
+        }
+
+        private void TestScene_Click(object sender, RoutedEventArgs e)
+        {
+            var cube1 = PolyhedronFactory.CreateCube();
+            var cube2 = PolyhedronFactory.CreateCube();
+
+            // Сдвигаем второй куб, чтобы он пересекался с первым
+            cube2.ApplyTransform(Matrix4x4.Translate(1.5, 0, 0));
+            cube2.ApplyTransform(Matrix4x4.Scale(0.8, 0.8, 0.8));
+
+            // Объединяем в одну сцену
+            _originalPoly = SceneBuilder.Combine(cube1, cube2);
+
+            UpdateStats();
+            Render();
         }
 
         private void BuildRevolution_Click(object sender, RoutedEventArgs e)
