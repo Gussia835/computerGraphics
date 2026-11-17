@@ -78,7 +78,7 @@ namespace lab6.Core
             var sb = new StringBuilder();
             var culture = CultureInfo.InvariantCulture;
 
-            sb.AppendLine("# Wavefront OBJ Export - Лабораторная работа 7 (Часть А)");
+            sb.AppendLine("# Wavefront OBJ Export");
             sb.AppendLine($"# Vertices: {polyhedron.Vertices.Count}");
             sb.AppendLine($"# Faces: {polyhedron.Faces.Count}");
             sb.AppendLine();

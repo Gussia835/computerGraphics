@@ -323,6 +323,43 @@
                             Height="30"
                             FontWeight="Bold" />
                 </Grid>
+                <!-- ЛАБА 8: ЗАДАНИЕ 1 (ОТСЕЧЕНИЕ НЕЛИЦЕВЫХ ГРАНЕЙ) -->
+                <TextBlock Text="Удаление невидимых граней (Лаба 8):" 
+                           FontWeight="Bold" 
+                           Margin="0,20,0,5" 
+                           Foreground="DarkRed"/>
+
+                <CheckBox x:Name="BackfaceCullingCheckBox" 
+                          Content="Отсекать нелицевые грани" 
+                          IsChecked="True"
+                          Checked="BackfaceCulling_Changed" 
+                          Unchecked="BackfaceCulling_Changed"
+                          Margin="0,0,0,5"/>
+
+                <TextBlock Text="Вектор обзора (для параллельной проекции):"/>
+                <Grid Margin="0,2,0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="Vx"/>
+                        <TextBox x:Name="ViewXBox" Text="0" Width="55"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="Vy"/>
+                        <TextBox x:Name="ViewYBox" Text="0" Width="55"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="Vz"/>
+                        <TextBox x:Name="ViewZBox" Text="1" Width="55"/>
+                    </StackPanel>
+                </Grid>
+                <Button Content="Применить вектор обзора" 
+                        Click="ApplyViewVector_Click" 
+                        Height="25"/>
+
 
             </StackPanel>
 

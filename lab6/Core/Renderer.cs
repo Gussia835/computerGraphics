@@ -163,8 +163,42 @@ namespace lab6.Core
             return (sx, sy, d);
         }
 
+        // Вспомогательный метод: вычисление нормали грани через векторное произведение (Лекция: Слайд 3)
+        private Point CalculateFaceNormal(Point p0, Point p1, Point p2)
+        {
+            // Два вектора, лежащих в плоскости грани
+            double ux = p1.X - p0.X;
+            double uy = p1.Y - p0.Y;
+            double uz = p1.Z - p0.Z;
+
+            double vx = p2.X - p0.X;
+            double vy = p2.Y - p0.Y;
+            double vz = p2.Z - p0.Z;
+
+            // Векторное произведение u × v
+            double nx = uy * vz - uz * vy;
+            double ny = uz * vx - ux * vz;
+            double nz = ux * vy - uy * vx;
+
+            // Нормализация вектора нормали
+            double len = Math.Sqrt(nx * nx + ny * ny + nz * nz);
+            if (len > 1e-10)
+            {
+                nx /= len;
+                ny /= len;
+                nz /= len;
+            }
+
+            return new Point(nx, ny, nz);
+        }
+
         public WriteableBitmap RenderPolyhedron(
-            Polyhedron poly, Matrix4x4 modelMatrix, bool isPerspective, int renderMode)
+    Polyhedron poly,
+    Matrix4x4 modelMatrix,
+    bool isPerspective,
+    int renderMode,
+    bool enableBackfaceCulling = false,
+    Point? customViewVector = null)
         {
             Clear(255, 255, 255);
 
@@ -174,57 +208,92 @@ namespace lab6.Core
             double cameraDistance = 5.0;
 
             Matrix4x4 projectionMatrix = isPerspective
-                ? Matrix4x4.PerspectiveProjection(cameraDistance)
-                : Matrix4x4.OrthographicProjection();
+                                        ? Matrix4x4.PerspectiveProjection(cameraDistance)
+                                        : Matrix4x4.OrthographicProjection();
+
+            Point viewDir = customViewVector ?? new Point(0, 0, 1);
 
             foreach (var face in poly.Faces)
             {
-                var screenPts = new List<(int x, int y, float d)>();
-                var worldPts = new List<Point>();
+                if (face.VertexIndices.Length < 3) continue;
 
+                // 1. Переводим вершины грани в мировые координаты
+                var worldPoints = new List<Point>();
                 foreach (int idx in face.VertexIndices)
                 {
-                    var pt = poly.Vertices[idx].Transform(modelMatrix);
-                    // в обеих проекциях сдвигаем сцену вперёд камеры,
-                    // чтобы Z был положительным и сравнение было честным
-                    pt = pt.Transform(Matrix4x4.Translate(0, 0, cameraDistance + 2));
-
-                    var proj = Project(pt, projectionMatrix, centerX, centerY, scale);
-                    if (proj.sx < 0) continue;
-
-                    screenPts.Add(proj);
-                    worldPts.Add(pt);
+                    worldPoints.Add(poly.Vertices[idx].Transform(modelMatrix));
                 }
 
-                if (screenPts.Count < 3) continue;
-
-                if (EnableBackfaceCulling)
+                // 2. ОТСЕЧЕНИЕ НЕЛИЦЕВЫХ ГРАНЕЙ (Лаба №8, Задание 1)
+                if (enableBackfaceCulling)
                 {
-                    var v0 = worldPts[0]; var v1 = worldPts[1]; var v2 = worldPts[2];
-                    var e1 = new Point(v1.X - v0.X, v1.Y - v0.Y, v1.Z - v0.Z);
-                    var e2 = new Point(v2.X - v0.X, v2.Y - v0.Y, v2.Z - v0.Z);
-                    double nx = e1.Y * e2.Z - e1.Z * e2.Y;
-                    double ny = e1.Z * e2.X - e1.X * e2.Z;
-                    double nz = e1.X * e2.Y - e1.Y * e2.X;
-                    var toCam = new Point(-v0.X, -v0.Y, -v0.Z);
-                    if (nx * toCam.X + ny * toCam.Y + nz * toCam.Z < 0) continue;
+                    Point normal = CalculateFaceNormal(worldPoints[0], worldPoints[1], worldPoints[2]);
+
+                    Point v;
+                    if (isPerspective)
+                    {
+                        v = new Point(
+                            worldPoints[0].X,
+                            worldPoints[0].Y,
+                            worldPoints[0].Z - (-(cameraDistance + 2))
+                        );
+                    }
+                    else
+                    {
+                        v = viewDir;
+                    }
+
+                    double dotProduct = normal.X * v.X + normal.Y * v.Y + normal.Z * v.Z;
+
+                    if (dotProduct >= 0)
+                    {
+                        continue;
+                    }
                 }
 
-                // 1. сначала заливка
-                if (renderMode == 1 || renderMode == 2)
-                    FillPolygon(screenPts, 100, 150, 220, 255);
+                // 3. Проецирование на экран с сохранением глубины z (float)
+                var screenPoints = new List<(int x, int y, float z)>();
+                foreach (var worldPt in worldPoints)
+                {
+                    var pt = worldPt;
+                    if (isPerspective)
+                    {
+                        pt = pt.Transform(Matrix4x4.Translate(0, 0, cameraDistance + 2));
+                    }
 
-                // 2. потом линии поверх, с tiny bias чтобы прошли Z-тест
+                    var projected = pt.Transform(projectionMatrix);
+                    var normalized = projected.Normalize();
+
+                    if (double.IsNaN(normalized.X) || double.IsNaN(normalized.Y) ||
+                        double.IsInfinity(normalized.X) || double.IsInfinity(normalized.Y))
+                    {
+                        continue;
+                    }
+
+                    int sx = (int)(centerX + normalized.X * scale);
+                    int sy = (int)(centerY - normalized.Y * scale);
+                    float sz = (float)pt.Z; // Передаем глубину для совместимости с вашим Renderer
+
+                    screenPoints.Add((sx, sy, sz));
+                }
+
+                if (screenPoints.Count < 3) continue;
+
+                // Отрисовка каркаса с учетом z
                 if (renderMode == 0 || renderMode == 2)
                 {
-                    const float lineBias = 0.0005f;
-                    for (int i = 0; i < screenPts.Count; i++)
+                    for (int i = 0; i < screenPoints.Count; i++)
                     {
-                        var a = screenPts[i];
-                        var c = screenPts[(i + 1) % screenPts.Count];
-                        DrawLine(a.x, a.y, a.d - lineBias,
-                                 c.x, c.y, c.d - lineBias, 0, 0, 0);
+                        var p1 = screenPoints[i];
+                        var p2 = screenPoints[(i + 1) % screenPoints.Count];
+                        DrawLine(p1.x, p1.y, p1.z, p2.x, p2.y, p2.z, 0, 0, 0);
                     }
+                }
+
+                // Отрисовка заливки с учетом z
+                if (renderMode == 1 || renderMode == 2)
+                {
+                    FillPolygon(screenPoints, 100, 150, 220, 255);
                 }
             }
 
@@ -232,7 +301,10 @@ namespace lab6.Core
             System.Runtime.InteropServices.Marshal.Copy(_pixels, 0, _bitmap.BackBuffer, _pixels.Length);
             _bitmap.AddDirtyRect(new Int32Rect(0, 0, _width, _height));
             _bitmap.Unlock();
+
             return _bitmap;
         }
+
+
     }
 }

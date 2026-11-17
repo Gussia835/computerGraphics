@@ -205,16 +205,27 @@ namespace lab6
             if (_originalPoly == null || _renderer == null) return;
 
             bool isPerspective = (ProjectionCombo.SelectedIndex == 0);
+            bool enableCulling = BackfaceCullingCheckBox?.IsChecked == true;
 
+            // Считываем вектор обзора из полей UI
+            double vx = ReadDoubleSafe(ViewXBox, 0);
+            double vy = ReadDoubleSafe(ViewYBox, 0);
+            double vz = ReadDoubleSafe(ViewZBox, 1);
+            var viewVector = new lab6.Core.Point(vx, vy, vz);
+
+            // Передаем параметры в ручной рендерер
             var bitmap = _renderer.RenderPolyhedron(
                 _originalPoly,
                 _modelMatrix,
                 isPerspective,
-                _renderMode
+                _renderMode,
+                enableCulling,
+                viewVector
             );
 
             RenderImage.Source = bitmap;
         }
+
 
         private GeometryModel3D CreateEdgesModel(Point3DCollection positions)
         {
@@ -463,5 +474,17 @@ namespace lab6
                 }
             }
         }
+
+        private void BackfaceCulling_Changed(object sender, RoutedEventArgs e)
+        {
+            if (!IsLoaded) return;
+            Render();
+        }
+
+        private void ApplyViewVector_Click(object sender, RoutedEventArgs e)
+        {
+            Render();
+        }
+
     }
 }
