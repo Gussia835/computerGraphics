@@ -201,17 +201,56 @@ namespace lab6.Core
                  * Translate(axisPoint1.X, axisPoint1.Y, axisPoint1.Z);
         }
 
+        public static Matrix4x4 LookAt(Point eye, Point target, Point up)
+        {
+            double zx = eye.X - target.X;
+            double zy = eye.Y - target.Y;
+            double zz = eye.Z - target.Z;
+            double zLen = Math.Sqrt(zx * zx + zy * zy + zz * zz);
+            if (zLen < 1e-10) return Identity;
+            zx /= zLen; zy /= zLen; zz /= zLen;
+
+            double xx = up.Y * zz - up.Z * zy;
+            double xy = up.Z * zx - up.X * zz;
+            double xz = up.X * zy - up.Y * zx;
+            double xLen = Math.Sqrt(xx * xx + xy * xy + xz * xz);
+            if (xLen < 1e-10) return Identity;
+            xx /= xLen; xy /= xLen; xz /= xLen;
+
+            double yx = zy * xz - zz * xy;
+            double yy = zz * xx - zx * xz;
+            double yz = zx * xy - zy * xx;
+
+            return new Matrix4x4
+            {
+                M11 = xx,
+                M12 = yx,
+                M13 = zx,
+                M14 = 0,
+                M21 = xy,
+                M22 = yy,
+                M23 = zy,
+                M24 = 0,
+                M31 = xz,
+                M32 = yz,
+                M33 = zz,
+                M34 = 0,
+                M41 = -(xx * eye.X + xy * eye.Y + xz * eye.Z),
+                M42 = -(yx * eye.X + yy * eye.Y + yz * eye.Z),
+                M43 = -(zx * eye.X + zy * eye.Y + zz * eye.Z),
+                M44 = 1
+            };
+        }
+
         public static Matrix4x4 PerspectiveProjection(double distance)
         {
             return new Matrix4x4
             {
-                M11 = 1,
-                M22 = 1,
+                M11 = distance,
+                M22 = distance,
                 M33 = 1,
-                M34 = 1.0 / distance,
-                M41 = 0,
-                M42 = 0,
-                M43 = distance,  
+                M34 = -1,
+                M43 = 1,
                 M44 = 0
             };
         }
@@ -223,7 +262,7 @@ namespace lab6.Core
                 M11 = 1,
                 M22 = 1,
                 M33 = 1,
-                M44 = 1 
+                M44 = 1
             };
         }
     }

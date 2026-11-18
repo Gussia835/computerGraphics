@@ -18,7 +18,6 @@ namespace lab6.Core
 
         public bool EnableBackfaceCulling { get; set; } = false;
 
-        // near/far для нормализации глубины в [0,1]
         private const float Near = 0.1f;
         private const float Far = 100.0f;
 
@@ -45,7 +44,6 @@ namespace lab6.Core
                 _zBuffer[i] = float.MaxValue;
         }
 
-        // Глубина в [0,1]: 0 = у камеры, 1 = на far. Меньше = ближе.
         private float NormalizeDepth(double zWorld)
         {
             double d = (zWorld - Near) / (Far - Near);
@@ -70,8 +68,19 @@ namespace lab6.Core
             }
         }
 
-        // Линия с интерполяцией глубины между концами
         public void DrawLine(int x0, int y0, float d0, int x1, int y1, float d1, byte r, byte g, byte b)
+        {
+            // Вызываем базовый алгоритм Брезенхэма несколько раз со сдвигом
+            DrawThinLine(x0, y0, d0, x1, y1, d1, r, g, b);
+
+            // Добавляем соседние линии для толщины (сдвиг по X и Y)
+            DrawThinLine(x0 + 1, y0, d0, x1 + 1, y1, d1, r, g, b);
+            DrawThinLine(x0, y0 + 1, d0, x1, y1 + 1, d1, r, g, b);
+
+        }
+
+        // Базовый алгоритм Брезенхэма (толщина 1 пиксель)
+        private void DrawThinLine(int x0, int y0, float d0, int x1, int y1, float d1, byte r, byte g, byte b)
         {
             int dx = Math.Abs(x1 - x0);
             int dy = Math.Abs(y1 - y0);
@@ -94,7 +103,6 @@ namespace lab6.Core
             }
         }
 
-        // Заливка с интерполяцией глубины по рёбрам scanline
         public void FillPolygon(
             List<(int x, int y, float d)> points,
             byte r, byte g, byte b, byte a)
@@ -126,7 +134,6 @@ namespace lab6.Core
                     }
                 }
 
-                // сортируем пары (x, d) вместе
                 var pairs = new List<(int x, float d)>();
                 for (int i = 0; i < xs.Count; i++) pairs.Add((xs[i], ds[i]));
                 pairs.Sort((a, c) => a.x.CompareTo(c.x));
@@ -146,27 +153,8 @@ namespace lab6.Core
             }
         }
 
-        // Проецирует точку и возвращает (screenX, screenY, depth)
-        private (int sx, int sy, float d) Project(
-            Point pt, Matrix4x4 projectionMatrix,
-            double centerX, double centerY, double scale)
-        {
-            var projected = pt.Transform(projectionMatrix);
-            var normalized = projected.Normalize();
-            if (double.IsNaN(normalized.X) || double.IsNaN(normalized.Y) ||
-                double.IsInfinity(normalized.X) || double.IsInfinity(normalized.Y))
-                return (-1, -1, float.MaxValue);
-
-            int sx = (int)(centerX + normalized.X * scale);
-            int sy = (int)(centerY - normalized.Y * scale);
-            float d = NormalizeDepth(pt.Z); // мировой Z после сдвига камеры
-            return (sx, sy, d);
-        }
-
-        // Вспомогательный метод: вычисление нормали грани через векторное произведение (Лекция: Слайд 3)
         private Point CalculateFaceNormal(Point p0, Point p1, Point p2)
         {
-            // Два вектора, лежащих в плоскости грани
             double ux = p1.X - p0.X;
             double uy = p1.Y - p0.Y;
             double uz = p1.Z - p0.Z;
@@ -175,12 +163,10 @@ namespace lab6.Core
             double vy = p2.Y - p0.Y;
             double vz = p2.Z - p0.Z;
 
-            // Векторное произведение u × v
             double nx = uy * vz - uz * vy;
             double ny = uz * vx - ux * vz;
             double nz = ux * vy - uy * vx;
 
-            // Нормализация вектора нормали
             double len = Math.Sqrt(nx * nx + ny * ny + nz * nz);
             if (len > 1e-10)
             {
@@ -193,19 +179,20 @@ namespace lab6.Core
         }
 
         public WriteableBitmap RenderPolyhedron(
-    Polyhedron poly,
-    Matrix4x4 modelMatrix,
-    bool isPerspective,
-    int renderMode,
-    bool enableBackfaceCulling = false,
-    Point? customViewVector = null)
+            Polyhedron poly,
+            Matrix4x4 modelMatrix,
+            bool isPerspective,
+            int renderMode,
+            bool enableBackfaceCulling = false,
+            Point? customViewVector = null,
+            Matrix4x4? viewMatrix = null)
         {
             Clear(255, 255, 255);
 
             double centerX = _width / 2.0;
             double centerY = _height / 2.0;
             double scale = Math.Min(_width, _height) / 4.0;
-            double cameraDistance = 5.0;
+            double cameraDistance = 2.0;
 
             Matrix4x4 projectionMatrix = isPerspective
                                         ? Matrix4x4.PerspectiveProjection(cameraDistance)
@@ -217,20 +204,37 @@ namespace lab6.Core
             {
                 if (face.VertexIndices.Length < 3) continue;
 
-                // 1. Переводим вершины грани в мировые координаты
                 var worldPoints = new List<Point>();
                 foreach (int idx in face.VertexIndices)
                 {
-                    worldPoints.Add(poly.Vertices[idx].Transform(modelMatrix));
+                    var wp = poly.Vertices[idx].Transform(modelMatrix);
+
+                    if (viewMatrix.HasValue)
+                    {
+                        wp = wp.Transform(viewMatrix.Value);
+                    }
+
+                    worldPoints.Add(wp);
                 }
 
-                // 2. ОТСЕЧЕНИЕ НЕЛИЦЕВЫХ ГРАНЕЙ (Лаба №8, Задание 1)
                 if (enableBackfaceCulling)
                 {
                     Point normal = CalculateFaceNormal(worldPoints[0], worldPoints[1], worldPoints[2]);
 
+                    // ИНВЕРТИРУЕМ НОРМАЛЬ, если используем камеру (чтобы она смотрела наружу)
+                    if (viewMatrix.HasValue)
+                    {
+                        normal = new Point(-normal.X, -normal.Y, -normal.Z);
+                    }
+
                     Point v;
-                    if (isPerspective)
+                    if (viewMatrix.HasValue)
+                    {
+                        // В системе координат камеры камера находится в (0,0,0), а смотрит в -Z.
+                        // Вектор обзора для грани — это вектор от камеры к первой точке грани.
+                        v = new Point(-worldPoints[0].X, -worldPoints[0].Y, -worldPoints[0].Z);
+                    }
+                    else if (isPerspective)
                     {
                         v = new Point(
                             worldPoints[0].X,
@@ -245,18 +249,19 @@ namespace lab6.Core
 
                     double dotProduct = normal.X * v.X + normal.Y * v.Y + normal.Z * v.Z;
 
+                    // Если нормаль смотрит от камеры, грань невидима
                     if (dotProduct >= 0)
                     {
                         continue;
                     }
                 }
 
-                // 3. Проецирование на экран с сохранением глубины z (float)
                 var screenPoints = new List<(int x, int y, float z)>();
                 foreach (var worldPt in worldPoints)
                 {
                     var pt = worldPt;
-                    if (isPerspective)
+
+                    if (isPerspective && viewMatrix == null)
                     {
                         pt = pt.Transform(Matrix4x4.Translate(0, 0, cameraDistance + 2));
                     }
@@ -272,14 +277,13 @@ namespace lab6.Core
 
                     int sx = (int)(centerX + normalized.X * scale);
                     int sy = (int)(centerY - normalized.Y * scale);
-                    float sz = (float)pt.Z; // Передаем глубину для совместимости с вашим Renderer
+                    float sz = (float)pt.Z;
 
                     screenPoints.Add((sx, sy, sz));
                 }
 
                 if (screenPoints.Count < 3) continue;
 
-                // Отрисовка каркаса с учетом z
                 if (renderMode == 0 || renderMode == 2)
                 {
                     for (int i = 0; i < screenPoints.Count; i++)
@@ -290,7 +294,6 @@ namespace lab6.Core
                     }
                 }
 
-                // Отрисовка заливки с учетом z
                 if (renderMode == 1 || renderMode == 2)
                 {
                     FillPolygon(screenPoints, 100, 150, 220, 255);
@@ -304,7 +307,5 @@ namespace lab6.Core
 
             return _bitmap;
         }
-
-
     }
 }

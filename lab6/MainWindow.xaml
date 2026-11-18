@@ -269,7 +269,7 @@
 
                 <TextBlock Text="Образующая (x y z через ;):" />
                 <TextBox x:Name="GeneratrixBox"
-                         Text="1 0 0; 2 0 1; 1 0 2; 0.5 0 1.5"
+                         Text="1 0 1; 1 0 -1"
                          Height="40"
                          TextWrapping="Wrap"
                          AcceptsReturn="True" />
@@ -296,7 +296,9 @@
                     </StackPanel>
                 </Grid>
 
-                <Button Content="Два пересекающихся куба" Click="TestScene_Click" Height="30"/>
+                <Button Content="Два пересекающихся куба"
+                        Click="TestScene_Click"
+                        Height="30" />
 
                 <Button Content="Построить фигуру вращения"
                         Click="BuildRevolution_Click"
@@ -324,42 +326,111 @@
                             FontWeight="Bold" />
                 </Grid>
                 <!-- ЛАБА 8: ЗАДАНИЕ 1 (ОТСЕЧЕНИЕ НЕЛИЦЕВЫХ ГРАНЕЙ) -->
-                <TextBlock Text="Удаление невидимых граней (Лаба 8):" 
-                           FontWeight="Bold" 
-                           Margin="0,20,0,5" 
-                           Foreground="DarkRed"/>
+                <TextBlock Text="Удаление невидимых граней (Лаба 8):"
+                           FontWeight="Bold"
+                           Margin="0,20,0,5"
+                           Foreground="DarkRed" />
 
-                <CheckBox x:Name="BackfaceCullingCheckBox" 
-                          Content="Отсекать нелицевые грани" 
+                <CheckBox x:Name="BackfaceCullingCheckBox"
+                          Content="Отсекать нелицевые грани"
                           IsChecked="True"
-                          Checked="BackfaceCulling_Changed" 
+                          Checked="BackfaceCulling_Changed"
                           Unchecked="BackfaceCulling_Changed"
-                          Margin="0,0,0,5"/>
+                          Margin="0,0,0,5" />
 
-                <TextBlock Text="Вектор обзора (для параллельной проекции):"/>
+                <TextBlock Text="Вектор обзора (для параллельной проекции):" />
                 <Grid Margin="0,2,0,5">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition/>
-                        <ColumnDefinition/>
-                        <ColumnDefinition/>
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                        <ColumnDefinition />
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0">
-                        <TextBlock Text="Vx"/>
-                        <TextBox x:Name="ViewXBox" Text="0" Width="55"/>
+                        <TextBlock Text="Vx" />
+                        <TextBox x:Name="ViewXBox"
+                                 Text="0"
+                                 Width="55" />
                     </StackPanel>
                     <StackPanel Grid.Column="1">
-                        <TextBlock Text="Vy"/>
-                        <TextBox x:Name="ViewYBox" Text="0" Width="55"/>
+                        <TextBlock Text="Vy" />
+                        <TextBox x:Name="ViewYBox"
+                                 Text="0"
+                                 Width="55" />
                     </StackPanel>
                     <StackPanel Grid.Column="2">
-                        <TextBlock Text="Vz"/>
-                        <TextBox x:Name="ViewZBox" Text="1" Width="55"/>
+                        <TextBlock Text="Vz" />
+                        <TextBox x:Name="ViewZBox"
+                                 Text="1"
+                                 Width="55" />
                     </StackPanel>
                 </Grid>
-                <Button Content="Применить вектор обзора" 
-                        Click="ApplyViewVector_Click" 
-                        Height="25"/>
+                <Button Content="Применить вектор обзора"
+                        Click="ApplyViewVector_Click"
+                        Height="25" />
 
+                <!-- ЛАБА 8: ЗАДАНИЕ 3 (КАМЕРА) -->
+                <TextBlock Text="Камера (Лаба 8):"
+                           FontWeight="Bold"
+                           Margin="0,20,0,5"
+                           Foreground="DarkRed" />
+
+                <TextBlock Text="Позиция камеры (x, y, z):" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="CamXBox"
+                             Grid.Column="0"
+                             Text="0"
+                             Width="55" />
+                    <TextBox x:Name="CamYBox"
+                             Grid.Column="1"
+                             Text="0"
+                             Width="55" />
+                    <TextBox x:Name="CamZBox"
+                             Grid.Column="2"
+                             Text="5"
+                             Width="55" />
+                </Grid>
+
+                <TextBlock Text="Цель обзора (x, y, z):"
+                           Margin="0,5,0,0" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="TargetXBox"
+                             Grid.Column="0"
+                             Text="0"
+                             Width="55" />
+                    <TextBox x:Name="TargetYBox"
+                             Grid.Column="1"
+                             Text="0"
+                             Width="55" />
+                    <TextBox x:Name="TargetZBox"
+                             Grid.Column="2"
+                             Text="0"
+                             Width="55" />
+                </Grid>
+
+                <CheckBox x:Name="UseCameraCheckBox"
+                          Content="Использовать камеру"
+                          Margin="0,5,0,0"
+                          Checked="CameraParams_Changed"
+                          Unchecked="CameraParams_Changed" />
+
+                <TextBlock Text="Угол облета (градусы):" />
+                <TextBox x:Name="OrbitAngleBox"
+                         Text="15"
+                         Width="60" />
+                <Button Content="Вращать камеру вокруг объекта"
+                        Click="OrbitCamera_Click"
+                        Height="25"
+                        Margin="0,5,0,0" />
 
             </StackPanel>
 

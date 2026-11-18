@@ -17,6 +17,7 @@ namespace lab6
 
         private Renderer _renderer;
         private int _renderMode = 1;
+        private double _cameraOrbitAngle = 0;
 
         public MainWindow()
         {
@@ -58,7 +59,7 @@ namespace lab6
             }
             _modelMatrix = Matrix4x4.Identity;
             UpdateStats();
-            _renderer.EnableBackfaceCulling = true; 
+            _renderer.EnableBackfaceCulling = true;
             Render();
         }
 
@@ -213,6 +214,24 @@ namespace lab6
             double vz = ReadDoubleSafe(ViewZBox, 1);
             var viewVector = new lab6.Core.Point(vx, vy, vz);
 
+            Matrix4x4? viewMatrix = null;
+            if (UseCameraCheckBox.IsChecked == true)
+            {
+                var eye = new lab6.Core.Point(
+                    ReadDoubleSafe(CamXBox, 0),
+                    ReadDoubleSafe(CamYBox, 0),
+                    ReadDoubleSafe(CamZBox, 5));
+
+                var target = new lab6.Core.Point(
+                    ReadDoubleSafe(TargetXBox, 0),
+                    ReadDoubleSafe(TargetYBox, 0),
+                    ReadDoubleSafe(TargetZBox, 0));
+
+                var up = new lab6.Core.Point(0, 1, 0);
+
+                viewMatrix = Matrix4x4.LookAt(eye, target, up);
+            }
+
             // Передаем параметры в ручной рендерер
             var bitmap = _renderer.RenderPolyhedron(
                 _originalPoly,
@@ -220,7 +239,8 @@ namespace lab6
                 isPerspective,
                 _renderMode,
                 enableCulling,
-                viewVector
+                viewVector,
+                viewMatrix
             );
 
             RenderImage.Source = bitmap;
@@ -347,9 +367,9 @@ namespace lab6
                 _originalPoly = SurfaceGenerator.CreateSurface(function, xMin, xMax, yMin, yMax, stepsX, stepsY);
 
                 _modelMatrix = Matrix4x4.Identity;
+                _renderer.EnableBackfaceCulling = false;
 
                 UpdateStats();
-                _renderer.EnableBackfaceCulling = false;
                 Render();
             }
             catch (Exception ex)
@@ -479,6 +499,42 @@ namespace lab6
 
         private void ApplyViewVector_Click(object sender, RoutedEventArgs e)
         {
+            Render();
+        }
+
+        private void CameraParams_Changed(object sender, RoutedEventArgs e)
+        {
+            if (!IsLoaded) return;
+            Render();
+        }
+
+        private void OrbitCamera_Click(object sender, RoutedEventArgs e)
+        {
+            double camX = ReadDoubleSafe(CamXBox, 0);
+            double camY = ReadDoubleSafe(CamYBox, 2);
+            double camZ = ReadDoubleSafe(CamZBox, 5);
+
+            double targetX = ReadDoubleSafe(TargetXBox, 0);
+            double targetY = ReadDoubleSafe(TargetYBox, 0);
+            double targetZ = ReadDoubleSafe(TargetZBox, 0);
+
+            double dx = camX - targetX;
+            double dz = camZ - targetZ;
+            double radius = Math.Sqrt(dx * dx + dz * dz);
+
+            double currentAngle = Math.Atan2(dx, dz);
+
+            double stepDegrees = ReadDoubleSafe(OrbitAngleBox, 15);
+            double stepRadians = stepDegrees * Math.PI / 180.0;
+
+            double newAngle = currentAngle + stepRadians;
+
+            double newX = targetX + radius * Math.Sin(newAngle);
+            double newZ = targetZ + radius * Math.Cos(newAngle);
+
+            CamXBox.Text = newX.ToString("F2").Replace('.', ',');
+            CamZBox.Text = newZ.ToString("F2").Replace('.', ',');
+
             Render();
         }
 
