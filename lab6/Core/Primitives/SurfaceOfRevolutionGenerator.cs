@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace lab6.Core.Primitives
 {
@@ -19,6 +16,19 @@ namespace lab6.Core.Primitives
             if (divisions < 3)
                 throw new ArgumentException("Количество разбиений должно быть не менее 3.");
 
+            var pts = new List<Point>(generatrix);
+            if (pts.Count > 1)
+            {
+                var first = pts[0];
+                var last = pts[pts.Count - 1];
+                if (Math.Abs(first.X - last.X) < 1e-6 &&
+                    Math.Abs(first.Y - last.Y) < 1e-6 &&
+                    Math.Abs(first.Z - last.Z) < 1e-6)
+                {
+                    pts.RemoveAt(pts.Count - 1);
+                }
+            }
+
             var poly = new Polyhedron();
             double angleStep = 2.0 * Math.PI / divisions;
 
@@ -31,13 +41,13 @@ namespace lab6.Core.Primitives
                 else if (axis == 1) rotationMatrix = Matrix4x4.RotateY(angle);
                 else if (axis == 2) rotationMatrix = Matrix4x4.RotateZ(angle);
 
-                foreach (var pt in generatrix)
+                foreach (var pt in pts)
                 {
                     poly.Vertices.Add(pt.Transform(rotationMatrix));
                 }
             }
 
-            int ptsPerRing = generatrix.Count;
+            int ptsPerRing = pts.Count;
 
             for (int i = 0; i < divisions; i++)
             {
@@ -50,7 +60,7 @@ namespace lab6.Core.Primitives
                     int p3 = nextRing * ptsPerRing + j + 1;
                     int p4 = nextRing * ptsPerRing + j;
 
-                    poly.Faces.Add(new Polygon(p1, p2, p3, p4));
+                    poly.Faces.Add(new Polygon(p1, p4, p3, p2));
                 }
             }
 

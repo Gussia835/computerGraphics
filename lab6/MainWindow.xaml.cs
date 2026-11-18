@@ -389,23 +389,19 @@ namespace lab6
                 foreach (var pair in pairs)
                 {
                     string[] coords = pair.Trim().Split(new[] { ' ', ',' }, StringSplitOptions.RemoveEmptyEntries);
-                    if (coords.Length >= 2)
+                    if (coords.Length >= 3)
                     {
-                        double c1 = ReadDoubleSafeFromString(coords[0], 0);
-                        double c2 = ReadDoubleSafeFromString(coords[1], 0);
+                        double x = ReadDoubleSafeFromString(coords[0], 0);
+                        double y = ReadDoubleSafeFromString(coords[1], 0);
+                        double z = ReadDoubleSafeFromString(coords[2], 0);
 
-                        if (axis == 0)
-                            generatrix.Add(new lab6.Core.Point(0, c1, c2));
-                        else if (axis == 1)
-                            generatrix.Add(new lab6.Core.Point(c1, 0, c2));
-                        else
-                            generatrix.Add(new lab6.Core.Point(c1, c2, 0));
+                        generatrix.Add(new lab6.Core.Point(x, y, z));
                     }
                 }
 
                 if (generatrix.Count < 2)
                 {
-                    MessageBox.Show("Введите хотя бы 2 точки для образующей (формат: 'x z; x z' или 'x y; x y').", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show("Введите хотя бы 2 точки для образующей (формат: 'x y z; x y z').", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 

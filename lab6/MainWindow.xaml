@@ -267,9 +267,9 @@
                            Margin="0,20,0,5"
                            Foreground="DarkBlue" />
 
-                <TextBlock Text="Образующая (x z через ;):" />
+                <TextBlock Text="Образующая (x y z через ;):" />
                 <TextBox x:Name="GeneratrixBox"
-                         Text="1 0; 2 1; 1 2; 0.5 1.5"
+                         Text="1 0 0; 2 0 1; 1 0 2; 0.5 0 1.5"
                          Height="40"
                          TextWrapping="Wrap"
                          AcceptsReturn="True" />
