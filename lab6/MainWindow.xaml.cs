@@ -18,6 +18,8 @@ namespace lab6
         private Renderer _renderer;
         private int _renderMode = 1;
         private double _cameraOrbitAngle = 0;
+        private bool _isSurface = false;
+
 
         public MainWindow()
         {
@@ -58,8 +60,11 @@ namespace lab6
                 case 4: _originalPoly = PolyhedronFactory.CreateDodecahedron(); break;
             }
             _modelMatrix = Matrix4x4.Identity;
+
+
             UpdateStats();
-            _renderer.EnableBackfaceCulling = true;
+            _isSurface = false;
+      
             Render();
         }
 
@@ -206,7 +211,7 @@ namespace lab6
             if (_originalPoly == null || _renderer == null) return;
 
             bool isPerspective = (ProjectionCombo.SelectedIndex == 0);
-            bool enableCulling = BackfaceCullingCheckBox?.IsChecked == true;
+            bool enableCulling = BackfaceCullingCheckBox?.IsChecked == true && !_isSurface;
 
             // Считываем вектор обзора из полей UI
             double vx = ReadDoubleSafe(ViewXBox, 0);
@@ -365,9 +370,8 @@ namespace lab6
                 }
 
                 _originalPoly = SurfaceGenerator.CreateSurface(function, xMin, xMax, yMin, yMax, stepsX, stepsY);
-
-                _modelMatrix = Matrix4x4.Identity;
-                _renderer.EnableBackfaceCulling = false;
+                _modelMatrix = Matrix4x4.RotateX(-Math.PI / 2);
+                _isSurface = true;
 
                 UpdateStats();
                 Render();
@@ -381,8 +385,11 @@ namespace lab6
 
         private void TestScene_Click(object sender, RoutedEventArgs e)
         {
+            _modelMatrix = Matrix4x4.RotateY(0.6);
+
             var cube1 = PolyhedronFactory.CreateCube();
             var cube2 = PolyhedronFactory.CreateCube();
+
 
             // Сдвигаем второй куб, чтобы он пересекался с первым
             cube2.ApplyTransform(Matrix4x4.Translate(1.5, 0, 0));
@@ -391,7 +398,10 @@ namespace lab6
             // Объединяем в одну сцену
             _originalPoly = SceneBuilder.Combine(cube1, cube2);
 
+
             UpdateStats();
+
+            _isSurface = false; 
             Render();
         }
 
@@ -428,6 +438,7 @@ namespace lab6
                 _originalPoly = SurfaceOfRevolutionGenerator.CreateRevolution(generatrix, axis, divisions);
 
                 _modelMatrix = Matrix4x4.Identity;
+                _isSurface = true;
 
                 UpdateStats();
                 Render();
@@ -450,6 +461,7 @@ namespace lab6
                 {
                     _originalPoly = lab6.Core.ObjIO.LoadFromOBJ(openFileDialog.FileName);
                     _modelMatrix = Matrix4x4.Identity;
+                    _isSurface = false;
 
                     UpdateStats();
                     Render();

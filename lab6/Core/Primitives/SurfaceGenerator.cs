@@ -40,6 +40,41 @@ namespace lab6.Core.Primitives
                 }
             }
 
+            double cx = 0;
+            double cy = 0;
+            double cz = 0;
+
+            foreach (Point v in poly.Vertices) {
+                cx += v.X;
+                cy += v.Y;
+                cz += v.Z;
+            }
+
+            int n = poly.Vertices.Count;
+            cx /= n;
+            cy /= n;
+            cz /= n;
+
+            double max_radius = 0;
+            for (int i =0; i < n; ++i)
+            {
+                Point v = poly.Vertices[i];
+                Point shifted = new Point(v.X - cx, v.Y - cy, v.Z - cz);
+                poly.Vertices[i] = shifted;
+
+                double radius = Math.Sqrt(shifted.X * shifted.X + shifted.Y*shifted.Y + shifted.Z * shifted.Z);
+
+                max_radius = Math.Max(max_radius, radius);
+            }
+
+            double scale = max_radius > 0.001 ? 1.5 / max_radius : 1.0;
+
+            for (int i = 0; i < n; ++i)
+            {
+                Point currPoint = poly.Vertices[i];
+                poly.Vertices[i] = new Point(currPoint.X * scale, currPoint.Y * scale, currPoint.Z * scale);
+            }
+
             //Создание граней (полигонов)
             for (int j = 0; j < stepsY; j++)
             {
