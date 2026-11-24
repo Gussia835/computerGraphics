@@ -113,7 +113,17 @@
                     <ComboBoxItem Content="Каркас (Wireframe)" />
                     <ComboBoxItem Content="Заливка (Filled)" />
                     <ComboBoxItem Content="Каркас + Заливка" />
+                    <ComboBoxItem Content="Текстурирование" />
                 </ComboBox>
+
+                <TextBlock Text="Текстурирование:" 
+                           FontWeight="Bold" 
+                           Margin="0,20,0,5" 
+                           Foreground="DarkGreen"/>
+                <Button Content="🖼️ Загрузить текстуру" 
+                        Click="LoadTexture_Click" 
+                        Height="30"
+                        FontWeight="Bold"/>
 
                 <Button Content="Сбросить"
                         Click="Reset_Click"

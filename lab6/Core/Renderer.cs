@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Runtime.ConstrainedExecution;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -10,6 +9,24 @@ namespace lab6.Core
 {
     public class Renderer
     {
+        private byte[]? _texturePixels;
+        private int _texWidth;
+        private int _texHeight;
+        public bool HasTexture => _texturePixels != null;
+
+        public void LoadTexture(string filePath)
+        {
+            var bitmap = new BitmapImage(new Uri(filePath, UriKind.Absolute));
+            var formattedBitmap = new FormatConvertedBitmap(bitmap, PixelFormats.Bgra32, null, 0);
+
+            _texWidth = formattedBitmap.PixelWidth;
+            _texHeight = formattedBitmap.PixelHeight;
+            int texStride = _texWidth * 4;
+            _texturePixels = new byte[_texHeight * texStride];
+
+            formattedBitmap.CopyPixels(_texturePixels, texStride, 0);
+        }
+
         private WriteableBitmap _bitmap;
         private byte[] _pixels;
         private float[] _zBuffer;
@@ -21,9 +38,6 @@ namespace lab6.Core
         private float _farDepth;
 
         public bool EnableBackfaceCulling { get; set; } = false;
-
-        private const float Near = 0.1f;
-        private const float Far = 100.0f;
 
         public Renderer(int width, int height)
         {
@@ -48,19 +62,10 @@ namespace lab6.Core
                 _zBuffer[i] = _farDepth;
         }
 
-        private float NormalizeDepth(double zWorld)
-        {
-            double d = (zWorld - Near) / (Far - Near);
-            if (d < 0) d = 0;
-            if (d > 1) d = 1;
-            return (float)d;
-        }
-
         public void SetPixel(int x, int y, byte r, byte g, byte b, byte a, float depth)
         {
             if (x < 0 || x >= _width || y < 0 || y >= _height) return;
             int pixelIndex = y * _width + x;
-
 
             bool isCloser = _isPerspective ? (depth > _zBuffer[pixelIndex]) : (depth < _zBuffer[pixelIndex]);
 
@@ -75,8 +80,7 @@ namespace lab6.Core
             }
         }
 
-        // Базовый алгоритм Брезенхэма (толщина 1 пиксель)
-        private void DrawLine(int x0, int y0, float d0, int x1, int y1, float d1, byte r, byte g, byte b, int thickness=1)
+        private void DrawLine(int x0, int y0, float d0, int x1, int y1, float d1, byte r, byte g, byte b, int thickness = 1)
         {
             int dx = Math.Abs(x1 - x0);
             int dy = Math.Abs(y1 - y0);
@@ -103,9 +107,7 @@ namespace lab6.Core
             }
         }
 
-        public void FillPolygon(
-            List<(int x, int y, float d)> points,
-            byte r, byte g, byte b, byte a)
+        public void FillPolygon(List<(int x, int y, float d)> points, byte r, byte g, byte b, byte a)
         {
             if (points.Count < 3) return;
 
@@ -120,8 +122,7 @@ namespace lab6.Core
 
             for (int y = minY; y <= maxY; y++)
             {
-                var xs = new List<int>();
-                var ds = new List<float>();
+                var pairs = new List<(int x, float d)>();
                 for (int i = 0; i < points.Count; i++)
                 {
                     var p1 = points[i];
@@ -129,13 +130,12 @@ namespace lab6.Core
                     if ((p1.y <= y && p2.y > y) || (p2.y <= y && p1.y > y))
                     {
                         double t = (double)(y - p1.y) / (p2.y - p1.y);
-                        xs.Add((int)(p1.x + t * (p2.x - p1.x)));
-                        ds.Add((float)(p1.d + t * (p2.d - p1.d)));
+                        int x = (int)(p1.x + t * (p2.x - p1.x));
+                        float d = (float)(p1.d + t * (p2.d - p1.d));
+                        pairs.Add((x, d));
                     }
                 }
 
-                var pairs = new List<(int x, float d)>();
-                for (int i = 0; i < xs.Count; i++) pairs.Add((xs[i], ds[i]));
                 pairs.Sort((a, c) => a.x.CompareTo(c.x));
 
                 for (int i = 0; i < pairs.Count - 1; i += 2)
@@ -148,6 +148,75 @@ namespace lab6.Core
                         float t = (float)(x - xa) / span;
                         float d = da + (db - da) * t;
                         SetPixel(x, y, r, g, b, a, d);
+                    }
+                }
+            }
+        }
+
+        // Текстурированная заливка с поддержкой Z-буфера и интерполяцией (u, v) (Лаба №9, Задание 2)
+        public void FillTexturedPolygon(List<(int x, int y, float d, double u, double v)> points)
+        {
+            if (points.Count < 3 || _texturePixels == null) return;
+
+            int minY = int.MaxValue, maxY = int.MinValue;
+            foreach (var p in points)
+            {
+                if (p.y < minY) minY = p.y;
+                if (p.y > maxY) maxY = p.y;
+            }
+            minY = Math.Max(0, minY);
+            maxY = Math.Min(_height - 1, maxY);
+
+            int texStride = _texWidth * 4;
+
+            for (int y = minY; y <= maxY; y++)
+            {
+                var pairs = new List<(int x, float d, double u, double v)>();
+                for (int i = 0; i < points.Count; i++)
+                {
+                    var p1 = points[i];
+                    var p2 = points[(i + 1) % points.Count];
+                    if ((p1.y <= y && p2.y > y) || (p2.y <= y && p1.y > y))
+                    {
+                        double t = (double)(y - p1.y) / (p2.y - p1.y);
+                        int x = (int)(p1.x + t * (p2.x - p1.x));
+                        float d = (float)(p1.d + t * (p2.d - p1.d));
+                        double u = p1.u + t * (p2.u - p1.u);
+                        double v = p1.v + t * (p2.v - p1.v);
+                        pairs.Add((x, d, u, v));
+                    }
+                }
+
+                pairs.Sort((a, c) => a.x.CompareTo(c.x));
+
+                for (int i = 0; i < pairs.Count - 1; i += 2)
+                {
+                    int xa = pairs[i].x, xb = pairs[i + 1].x;
+                    float da = pairs[i].d, db = pairs[i + 1].d;
+                    double ua = pairs[i].u, ub = pairs[i + 1].u;
+                    double va = pairs[i].v, vb = pairs[i + 1].v;
+
+                    int span = Math.Max(1, xb - xa);
+                    for (int x = Math.Max(0, xa); x < Math.Min(_width, xb); x++)
+                    {
+                        double t = (double)(x - xa) / span;
+                        float d = (float)(da + (db - da) * t);
+                        double u = ua + (ub - ua) * t;
+                        double v = va + (vb - va) * t;
+
+                        u = Math.Max(0.0, Math.Min(1.0, u));
+                        v = Math.Max(0.0, Math.Min(1.0, v));
+
+                        int tx = (int)(u * (_texWidth - 1));
+                        int ty = (int)(v * (_texHeight - 1));
+                        int texIndex = ty * texStride + tx * 4;
+
+                        byte b = _texturePixels[texIndex];
+                        byte g = _texturePixels[texIndex + 1];
+                        byte r = _texturePixels[texIndex + 2];
+
+                        // Рисуем тексель через ваш Z-буфер!
+                        SetPixel(x, y, r, g, b, 255, d);
                     }
                 }
             }
@@ -178,95 +247,83 @@ namespace lab6.Core
             return new Point(nx, ny, nz);
         }
 
-        private List<Point> clipNear(List<Point> points)
+        // Отсечение ближней плоскостью с сохранением и интерполяцией UV-координат
+        private List<(Point pt, double u, double v)> clipNear(List<(Point pt, double u, double v)> items)
         {
-            List <Point> outPoints = new List<Point>();
+            var outItems = new List<(Point pt, double u, double v)>();
 
-            for (int i = 0; i < points.Count; ++i) {
+            for (int i = 0; i < items.Count; ++i)
+            {
+                var curr = items[i];
+                var next = items[(i + 1) % items.Count];
 
-                Point curr = points[i];
-                Point next = points[(i + 1) % points.Count];
-
-                bool currIn = curr.Z >= 0.1f;
-                bool nextIn = next.Z >= 0.1f;
+                bool currIn = curr.pt.Z >= 0.1f;
+                bool nextIn = next.pt.Z >= 0.1f;
 
                 if (currIn)
                 {
-                    outPoints.Add(curr);
+                    outItems.Add(curr);
                 }
 
                 if (currIn != nextIn)
                 {
-                    double t = (0.1f - curr.Z) / (next.Z - curr.Z);
-                    outPoints.Add(new Point( curr.X+t*(next.X - curr.X),
-                                             curr.Y+t*(next.Y - curr.Y),
-                                             0.1f));
+                    double t = (0.1f - curr.pt.Z) / (next.pt.Z - curr.pt.Z);
+                    var clippedPt = new Point(
+                        curr.pt.X + t * (next.pt.X - curr.pt.X), curr.pt.Y + t * (next.pt.Y - curr.pt.Y), 0.1f);
+                    double clippedU = curr.u + t * (next.u - curr.u);
+                    double clippedV = curr.v + t * (next.v - curr.v);
+                    outItems.Add((clippedPt, clippedU, clippedV));
                 }
             }
-
-            return outPoints;
+            return outItems;
         }
-
         public WriteableBitmap RenderPolyhedron(
-            Polyhedron poly,
-            Matrix4x4 modelMatrix,
-            bool isPerspective,
-            int renderMode,
-            bool enableBackfaceCulling = false,
-            Point? customViewVector = null,
-                     Matrix4x4? viewMatrix = null)
+        Polyhedron poly,
+        Matrix4x4 modelMatrix,
+        bool isPerspective,
+        int renderMode,
+        bool enableBackfaceCulling = false,
+        Point? customViewVector = null,
+        Matrix4x4? viewMatrix = null)
         {
             _isPerspective = isPerspective;
             _farDepth = isPerspective ? 0f : float.MaxValue;
             Clear(255, 255, 255);
-
             double centerX = _width / 2.0;
             double centerY = _height / 2.0;
             double scale = Math.Min(_width, _height) / 4.0;
-            double cameraDistance = 5.0; // 5.0 для лучшего обзора
-
+            double cameraDistance = 5.0;
             Matrix4x4 projectionMatrix = isPerspective
-                                        ? Matrix4x4.PerspectiveProjection(cameraDistance)
-                                        : Matrix4x4.OrthographicProjection();
-
-            Point viewDir = customViewVector ?? new Point(0, 0, 1);
+            ? Matrix4x4.PerspectiveProjection(cameraDistance)
+            : Matrix4x4.OrthographicProjection();
             var toCam = Matrix4x4.Translate(0, 0, cameraDistance + 2);
-
-            // Только сбор и подготовка данных
             var preparedFaces = new List<List<(int x, int y, float z)>>();
-
             foreach (var face in poly.Faces)
             {
                 if (face.VertexIndices.Length < 3) continue;
-
-                var worldPoints = new List<Point>();
-                foreach (int idx in face.VertexIndices)
+                if (face.TexCoords == null || face.TexCoords.Length != face.VertexIndices.Length)
+                    face.AssignDefaultUV(face.VertexIndices.Length);
+                var worldItems = new List<(Point pt, double u, double v)>();
+                for (int i = 0; i < face.VertexIndices.Length; i++)
                 {
+                    int idx = face.VertexIndices[i];
                     var wp = poly.Vertices[idx].Transform(modelMatrix);
                     if (viewMatrix.HasValue) wp = wp.Transform(viewMatrix.Value);
                     else wp = wp.Transform(toCam);
-                    worldPoints.Add(wp);
+                    var uv = face.TexCoords![i];
+                    worldItems.Add((wp, uv.u, uv.v));
                 }
-
-                worldPoints = clipNear(worldPoints);
-                if (worldPoints.Count < 3) continue;
-
+                worldItems = clipNear(worldItems);
+                if (worldItems.Count < 3) continue;
                 if (enableBackfaceCulling)
                 {
-                    Point normal = CalculateFaceNormal(worldPoints[0], worldPoints[1], worldPoints[2]);
-
-                    // Вектор ОТ грани К камере (камера всегда в 0,0,0 после применения viewMatrix или toCam)
-                    Point v = new Point(-worldPoints[0].X, -worldPoints[0].Y, -worldPoints[0].Z);
-
+                    Point p0 = worldItems[0].pt;
+                    Point p1 = worldItems[1].pt;
+                    Point p2 = worldItems[2].pt;
+                    Point normal = CalculateFaceNormal(p0, p1, p2);
+                    Point v = new Point(-p0.X, -p0.Y, -p0.Z);
                     double dotProduct = normal.X * v.X + normal.Y * v.Y + normal.Z * v.Z;
-
-                    // Если скалярное произведение <= 0, нормаль смотрит от камеры или перпендикулярна (грань невидима)
-                    if (dotProduct <= 0)
-                    {
-                        continue;
-                    }
-
-                    // Защита от артефактов на гранях, стоящих ровно ребром к камере
+                    if (dotProduct <= 0) continue;
                     double nLen = Math.Sqrt(normal.X * normal.X + normal.Y * normal.Y + normal.Z * normal.Z);
                     double vLen = Math.Sqrt(v.X * v.X + v.Y * v.Y + v.Z * v.Z);
                     if (nLen > 1e-10 && vLen > 1e-10)
@@ -275,39 +332,42 @@ namespace lab6.Core
                         if (Math.Abs(cosAngle) < 0.03) continue;
                     }
                 }
-
-                var screenPoints = new List<(int x, int y, float z)>();
-                foreach (var worldPt in worldPoints)
+                var texturedScreenPoints = new List<(int x, int y, float z, double u, double v)>();
+                var simpleScreenPoints = new List<(int x, int y, float z)>();
+                foreach (var item in worldItems)
                 {
-                    var pt = worldPt;
+                    var pt = item.pt;
                     if (isPerspective && viewMatrix == null) pt = pt.Transform(Matrix4x4.Translate(0, 0, cameraDistance + 2));
-
                     var projected = pt.Transform(projectionMatrix);
                     var normalized = projected.Normalize();
-
                     if (double.IsNaN(normalized.X) || double.IsNaN(normalized.Y) || double.IsInfinity(normalized.X) || double.IsInfinity(normalized.Y)) continue;
-
                     int sx = (int)(centerX + normalized.X * scale);
                     int sy = (int)(centerY - normalized.Y * scale);
                     float sz = isPerspective ? (float)(1.0 / Math.Max(pt.Z, 0.1f)) : (float)pt.Z;
-
-                    screenPoints.Add((sx, sy, sz));
+                    texturedScreenPoints.Add((sx, sy, sz, item.u, item.v));
+                    simpleScreenPoints.Add((sx, sy, sz));
                 }
-
-                // Добавляем грань в список
-                if (screenPoints.Count >= 3)
+                if (simpleScreenPoints.Count >= 3)
                 {
-                    preparedFaces.Add(screenPoints);
+                    preparedFaces.Add(simpleScreenPoints);
                 }
-
-                // Заливаем грань сразу 
                 if (renderMode == 1 || renderMode == 2)
                 {
-                    FillPolygon(screenPoints, 100, 150, 220, 255);
+                    FillPolygon(simpleScreenPoints, 100, 150, 220, 255);
                 }
-
-            } 
-
+                // Текстурирование 
+                else if (renderMode == 3)
+                {
+                    if (HasTexture)
+                    {
+                        FillTexturedPolygon(texturedScreenPoints);
+                    }
+                    else
+                    {
+                        FillPolygon(simpleScreenPoints, 200, 200, 200, 255);
+                    }
+                }
+            }
             // Отрисовка каркаса
             if (renderMode == 0 || renderMode == 2)
             {
@@ -317,20 +377,16 @@ namespace lab6.Core
                     {
                         var p1 = pts[i];
                         var p2 = pts[(i + 1) % pts.Count];
-
                         float d1 = isPerspective ? p1.z * 1.02f : p1.z - 0.05f;
                         float d2 = isPerspective ? p2.z * 1.02f : p2.z - 0.05f;
-
                         DrawLine(p1.x, p1.y, d1, p2.x, p2.y, d2, 0, 0, 0);
                     }
                 }
             }
-
             _bitmap.Lock();
             System.Runtime.InteropServices.Marshal.Copy(_pixels, 0, _bitmap.BackBuffer, _pixels.Length);
             _bitmap.AddDirtyRect(new Int32Rect(0, 0, _width, _height));
             _bitmap.Unlock();
-
             return _bitmap;
         }
     }

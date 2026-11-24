@@ -550,5 +550,29 @@ namespace lab6
             Render();
         }
 
+        private void LoadTexture_Click(object sender, RoutedEventArgs e)
+        {
+            var openFileDialog = new Microsoft.Win32.OpenFileDialog();
+            openFileDialog.Filter = "Изображения (*.png;*.jpg;*.jpeg;*.bmp)|*.png;*.jpg;*.jpeg;*.bmp";
+            openFileDialog.Title = "Выберите файл текстуры (Лаба 9)";
+            if (openFileDialog.ShowDialog() == true)
+            {
+                try
+                {
+                    _renderer.LoadTexture(openFileDialog.FileName);
+                    ModeSelector.SelectedIndex = 3;
+                    if (BackfaceCullingCheckBox != null)
+                        BackfaceCullingCheckBox.IsChecked = true;
+
+                    Render();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Ошибка загрузки текстуры: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+
     }
 }
