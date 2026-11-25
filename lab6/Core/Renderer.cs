@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using lab6.Core;
+using lab6.Core.Primitives;
 
 namespace lab6.Core
 {
@@ -103,13 +104,13 @@ namespace lab6.Core
             }
         }
 
-        public void FillPolygon(
-            List<(int x, int y, float d)> points,
-            byte r, byte g, byte b, byte a)
-        {
+        public void FillPolygon(List<Vertex2D> points) 
+        { 
+
             if (points.Count < 3) return;
 
-            int minY = int.MaxValue, maxY = int.MinValue;
+            int minY = int.MaxValue;
+            int maxY = int.MinValue;
             foreach (var p in points)
             {
                 if (p.y < minY) minY = p.y;
@@ -120,8 +121,8 @@ namespace lab6.Core
 
             for (int y = minY; y <= maxY; y++)
             {
-                var xs = new List<int>();
-                var ds = new List<float>();
+                List<Vertex2D> intersections = new List<Vertex2D>();
+
                 for (int i = 0; i < points.Count; i++)
                 {
                     var p1 = points[i];
@@ -129,25 +130,36 @@ namespace lab6.Core
                     if ((p1.y <= y && p2.y > y) || (p2.y <= y && p1.y > y))
                     {
                         double t = (double)(y - p1.y) / (p2.y - p1.y);
-                        xs.Add((int)(p1.x + t * (p2.x - p1.x)));
-                        ds.Add((float)(p1.d + t * (p2.d - p1.d)));
+                        intersections.Add(new Vertex2D
+                        {
+                            x = (int)(p1.x + t * (p2.x - p1.x)),
+                            z = p1.z + (float)(t * (p2.z - p1.z)),
+                            r = p1.r + (float)(t * (p2.r - p1.r)),
+                            g = p1.g + (float)(t * (p2.g - p1.g)),
+                            b = p1.b + (float)(t * (p2.b - p1.b))
+                        });
                     }
                 }
 
-                var pairs = new List<(int x, float d)>();
-                for (int i = 0; i < xs.Count; i++) pairs.Add((xs[i], ds[i]));
-                pairs.Sort((a, c) => a.x.CompareTo(c.x));
+                intersections.Sort((a, c) => a.x.CompareTo(c.x));
 
-                for (int i = 0; i < pairs.Count - 1; i += 2)
+                for (int i = 0; i < intersections.Count - 1; i += 2)
                 {
-                    int xa = pairs[i].x, xb = pairs[i + 1].x;
-                    float da = pairs[i].d, db = pairs[i + 1].d;
-                    int span = Math.Max(1, xb - xa);
-                    for (int x = Math.Max(0, xa); x < Math.Min(_width, xb); x++)
+                    var left = intersections[i];
+                    var right = intersections[i + 1];
+                    int span = Math.Max(1, right.x - left.x);
+
+                    for (int x = Math.Max(0, left.x); x < Math.Min(_width, right.x); x++)
                     {
-                        float t = (float)(x - xa) / span;
-                        float d = da + (db - da) * t;
-                        SetPixel(x, y, r, g, b, a, d);
+                        float t = (float)(x - left.x) / span;
+
+                        float z = left.z + (right.z - left.z) * t;
+                        float r = left.r + (right.r - left.r) * t;
+                        float g = left.g + (right.g - left.g) * t;
+                        float b = left.b + (right.b - left.b) * t;
+
+                        
+                        SetPixel(x, y, (byte)r, (byte)g, (byte)b, 255, z);
                     }
                 }
             }
@@ -178,17 +190,17 @@ namespace lab6.Core
             return new Point(nx, ny, nz);
         }
 
-        private List<Point> clipNear(List<Point> points)
+        private List<(Point pt, int idx)> clipNear(List<(Point pt, int idx)> points)
         {
-            List <Point> outPoints = new List<Point>();
+            var outPoints = new List<(Point pt, int idx)>();
 
-            for (int i = 0; i < points.Count; ++i) {
+            for (int i = 0; i < points.Count; ++i)
+            {
+                var curr = points[i];
+                var next = points[(i + 1) % points.Count];
 
-                Point curr = points[i];
-                Point next = points[(i + 1) % points.Count];
-
-                bool currIn = curr.Z >= 0.1f;
-                bool nextIn = next.Z >= 0.1f;
+                bool currIn = curr.pt.Z >= Near;
+                bool nextIn = next.pt.Z >= Near;
 
                 if (currIn)
                 {
@@ -197,10 +209,11 @@ namespace lab6.Core
 
                 if (currIn != nextIn)
                 {
-                    double t = (0.1f - curr.Z) / (next.Z - curr.Z);
-                    outPoints.Add(new Point( curr.X+t*(next.X - curr.X),
-                                             curr.Y+t*(next.Y - curr.Y),
-                                             0.1f));
+                    double t = (Near - curr.pt.Z) / (next.pt.Z - curr.pt.Z);
+                    outPoints.Add((new Point(
+                        curr.pt.X + t * (next.pt.X - curr.pt.X),
+                        curr.pt.Y + t * (next.pt.Y - curr.pt.Y),
+                        Near), -1)); 
                 }
             }
 
@@ -223,7 +236,7 @@ namespace lab6.Core
             double centerX = _width / 2.0;
             double centerY = _height / 2.0;
             double scale = Math.Min(_width, _height) / 4.0;
-            double cameraDistance = 5.0; // 5.0 для лучшего обзора
+            double cameraDistance = 10.0; // 5.0 для лучшего обзора
 
             Matrix4x4 projectionMatrix = isPerspective
                                         ? Matrix4x4.PerspectiveProjection(cameraDistance)
@@ -233,53 +246,57 @@ namespace lab6.Core
             var toCam = Matrix4x4.Translate(0, 0, cameraDistance + 2);
 
             // Только сбор и подготовка данных
-            var preparedFaces = new List<List<(int x, int y, float z)>>();
+            var vertexNormals = CalculateVertexNormals(poly);
+
+            // Параметры освещения
+            Point lightDir = new Point(0.5, 0.5, -1); // Свет сверху-справа-спереди
+            double lightLen = Math.Sqrt(lightDir.X * lightDir.X + lightDir.Y * lightDir.Y + lightDir.Z * lightDir.Z);
+            lightDir = new Point(lightDir.X / lightLen, lightDir.Y / lightLen, lightDir.Z / lightLen);
+
+            float ambient = 0.2f; // Фоновая освещённость
+            byte baseR = 100, baseG = 150, baseB = 220; // синий цвет объекта
+
+            var preparedFaces = new List<List<Vertex2D>>();
 
             foreach (var face in poly.Faces)
             {
                 if (face.VertexIndices.Length < 3) continue;
 
-                var worldPoints = new List<Point>();
+                // точки с исходными индексами
+                var worldPointsWithIdx = new List<(Point pt, int idx)>();
                 foreach (int idx in face.VertexIndices)
                 {
                     var wp = poly.Vertices[idx].Transform(modelMatrix);
                     if (viewMatrix.HasValue) wp = wp.Transform(viewMatrix.Value);
                     else wp = wp.Transform(toCam);
-                    worldPoints.Add(wp);
+                    worldPointsWithIdx.Add((wp, idx));
                 }
 
-                worldPoints = clipNear(worldPoints);
-                if (worldPoints.Count < 3) continue;
+                // все что за камерой убираем
+                worldPointsWithIdx = clipNear(worldPointsWithIdx);
+                if (worldPointsWithIdx.Count < 3) continue;
 
+                // Отсечение нелицевых граней
                 if (enableBackfaceCulling)
                 {
-                    Point normal = CalculateFaceNormal(worldPoints[0], worldPoints[1], worldPoints[2]);
-
-                    // Вектор ОТ грани К камере (камера всегда в 0,0,0 после применения viewMatrix или toCam)
-                    Point v = new Point(-worldPoints[0].X, -worldPoints[0].Y, -worldPoints[0].Z);
-
+                    Point normal = CalculateFaceNormal(worldPointsWithIdx[0].pt, worldPointsWithIdx[1].pt, worldPointsWithIdx[2].pt);
+                    Point v = new Point(-worldPointsWithIdx[0].pt.X, -worldPointsWithIdx[0].pt.Y, -worldPointsWithIdx[0].pt.Z);
                     double dotProduct = normal.X * v.X + normal.Y * v.Y + normal.Z * v.Z;
+                    if (dotProduct <= 0) continue;
 
-                    // Если скалярное произведение <= 0, нормаль смотрит от камеры или перпендикулярна (грань невидима)
-                    if (dotProduct <= 0)
-                    {
-                        continue;
-                    }
-
-                    // Защита от артефактов на гранях, стоящих ровно ребром к камере
                     double nLen = Math.Sqrt(normal.X * normal.X + normal.Y * normal.Y + normal.Z * normal.Z);
                     double vLen = Math.Sqrt(v.X * v.X + v.Y * v.Y + v.Z * v.Z);
                     if (nLen > 1e-10 && vLen > 1e-10)
                     {
-                        double cosAngle = dotProduct / (nLen * vLen);
-                        if (Math.Abs(cosAngle) < 0.03) continue;
+                        if (Math.Abs(dotProduct / (nLen * vLen)) < 0.03) continue;
                     }
                 }
 
-                var screenPoints = new List<(int x, int y, float z)>();
-                foreach (var worldPt in worldPoints)
+                // экранные точки с рассчитанным цветом
+                var screenPoints = new List<Vertex2D>();
+                foreach (var item in worldPointsWithIdx)
                 {
-                    var pt = worldPt;
+                    var pt = item.pt;
                     if (isPerspective && viewMatrix == null) pt = pt.Transform(Matrix4x4.Translate(0, 0, cameraDistance + 2));
 
                     var projected = pt.Transform(projectionMatrix);
@@ -289,24 +306,52 @@ namespace lab6.Core
 
                     int sx = (int)(centerX + normalized.X * scale);
                     int sy = (int)(centerY - normalized.Y * scale);
-                    float sz = isPerspective ? (float)(1.0 / Math.Max(pt.Z, 0.1f)) : (float)pt.Z;
+                    float sz = isPerspective ? (float)(1.0 / Math.Max(pt.Z, Near)) : (float)pt.Z;
 
-                    screenPoints.Add((sx, sy, sz));
+                    // ламберт
+                    Point normal;
+                    if (item.idx >= 0)
+                    {
+                        // усреднённая нормаль для плавного Гуро
+                        normal = vertexNormals[item.idx];
+                    }
+                    else
+                    {
+                        // Для новых точек, берём нормаль грани для точек из clipNear
+                        normal = CalculateFaceNormal(worldPointsWithIdx[0].pt, worldPointsWithIdx[1].pt, worldPointsWithIdx[2].pt);
+                        double nLen = Math.Sqrt(normal.X * normal.X + normal.Y * normal.Y + normal.Z * normal.Z);
+                        if (nLen > 1e-10) normal = new Point(normal.X / nLen, normal.Y / nLen, normal.Z / nLen);
+                    }
+
+                    // Скалярное произведение N · L
+                    double intensity = normal.X * lightDir.X + normal.Y * lightDir.Y + normal.Z * lightDir.Z;
+                    intensity = Math.Max(0, intensity); // max(0, N·L)
+
+                    // Итоговая яркость - фоновая + диффузная
+                    float brightness = ambient + (1 - ambient) * (float)intensity;
+
+                    screenPoints.Add(new Vertex2D
+                    {
+                        x = sx,
+                        y = sy,
+                        z = sz,
+                        r = baseR * brightness,
+                        g = baseG * brightness,
+                        b = baseB * brightness
+                    });
                 }
 
-                // Добавляем грань в список
                 if (screenPoints.Count >= 3)
                 {
                     preparedFaces.Add(screenPoints);
-                }
 
-                // Заливаем грань сразу 
-                if (renderMode == 1 || renderMode == 2)
-                {
-                    FillPolygon(screenPoints, 100, 150, 220, 255);
+                    // Заливаем грань
+                    if (renderMode == 1 || renderMode == 2)
+                    {
+                        FillPolygon(screenPoints);
+                    }
                 }
-
-            } 
+            }
 
             // Отрисовка каркаса
             if (renderMode == 0 || renderMode == 2)
@@ -321,7 +366,7 @@ namespace lab6.Core
                         float d1 = isPerspective ? p1.z * 1.02f : p1.z - 0.05f;
                         float d2 = isPerspective ? p2.z * 1.02f : p2.z - 0.05f;
 
-                        DrawLine(p1.x, p1.y, d1, p2.x, p2.y, d2, 0, 0, 0);
+                        DrawLine(p1.x, p1.y, d1, p2.x, p2.y, d2, 0, 0, 0, 2);
                     }
                 }
             }
@@ -332,6 +377,83 @@ namespace lab6.Core
             _bitmap.Unlock();
 
             return _bitmap;
+        }
+
+        private List<Point> CalculateVertexNormals(Polyhedron poly)
+        {
+            int n = poly.Vertices.Count;
+
+            double[] sumX = new double[n];
+            double[] sumY = new double[n];
+            double[] sumZ = new double[n];
+
+            int[] count = new int[n];
+
+            foreach (var face in poly.Faces)
+            {
+                if (face.VertexIndices.Length < 3)
+                {
+                    continue;
+                }
+
+                Point p0 = poly.Vertices[face.VertexIndices[0]];
+                Point p1 = poly.Vertices[face.VertexIndices[1]];
+                Point p2 = poly.Vertices[face.VertexIndices[2]];
+
+                double ux = p1.X - p0.X;
+                double uy = p1.Y - p0.Y; 
+                double uz = p1.Z - p0.Z;
+
+                double vx = p2.X - p0.X;
+                double vy = p2.Y - p0.Y; 
+                double vz = p2.Z - p0.Z;
+                
+                double nx = uy * vz - uz * vy;
+                double ny = uz * vx - ux * vz;
+                double nz = ux * vy - uy * vx;
+
+                double len = Math.Sqrt(nx * nx + ny * ny + nz * nz);
+                if (len < 1e-10)
+                {
+                    continue;
+                }
+                nx /= len; ny /= len; nz /= len;
+
+                foreach (int idx in face.VertexIndices)
+                {
+                    sumX[idx] += nx;
+                    sumY[idx] += ny;
+                    sumZ[idx] += nz;
+                    count[idx]++;
+                }
+            }
+
+            var vertexNormals = new List<Point>(n);
+            for (int i = 0; i < n; i++)
+            {
+                if (count[i] == 0)
+                {
+                    vertexNormals.Add(new Point(0, 0, 1));
+                }
+
+                else
+                {
+                    double nx = sumX[i] / count[i];
+                    double ny = sumY[i] / count[i];
+                    double nz = sumZ[i] / count[i];
+
+                    double len = Math.Sqrt(nx * nx + ny * ny + nz * nz);
+                    if (len > 1e-10)
+                    {
+                        nx /= len; ny /= len; nz /= len;
+                    }
+
+                    vertexNormals.Add(new Point(nx, ny, nz));
+                }
+            }
+            
+            return vertexNormals;
+        
         }
     }
 }
