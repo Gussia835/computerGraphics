@@ -113,7 +113,17 @@
                     <ComboBoxItem Content="Каркас (Wireframe)" />
                     <ComboBoxItem Content="Заливка (Filled)" />
                     <ComboBoxItem Content="Каркас + Заливка" />
+                    <ComboBoxItem Content="Текстурирование" />
                 </ComboBox>
+
+                <TextBlock Text="Текстурирование:" 
+                           FontWeight="Bold" 
+                           Margin="0,20,0,5" 
+                           Foreground="DarkGreen"/>
+                <Button Content="🖼️ Загрузить текстуру" 
+                        Click="LoadTexture_Click" 
+                        Height="30"
+                        FontWeight="Bold"/>
 
                 <Button Content="Сбросить"
                         Click="Reset_Click"
@@ -431,6 +441,14 @@
                         Click="OrbitCamera_Click"
                         Height="25"
                         Margin="0,5,0,0" />
+
+                <TextBlock Text="Направление света (X, Y, Z):" Margin="0,5,0,2"/>
+                <StackPanel Orientation="Horizontal">
+                    <TextBox x:Name="LightXBox" Width="50" Text="0.5"/>
+                    <TextBox x:Name="LightYBox" Width="50" Text="0.5"/>
+                    <TextBox x:Name="LightZBox" Width="50" Text="-1"/>
+                </StackPanel>
+                <Button Content="Применить свет" Click="ApplyLight_Click"/>
 
             </StackPanel>
 

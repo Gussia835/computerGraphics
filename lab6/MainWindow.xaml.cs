@@ -210,6 +210,11 @@ namespace lab6
         {
             if (_originalPoly == null || _renderer == null) return;
 
+            _renderer.LightDir = new lab6.Core.Point(
+            ReadDoubleSafe(LightXBox, 0.5),
+            ReadDoubleSafe(LightYBox, 0.5),
+            ReadDoubleSafe(LightZBox, -1));
+
             bool isPerspective = (ProjectionCombo.SelectedIndex == 0);
             bool enableCulling = BackfaceCullingCheckBox?.IsChecked == true && !_isSurface;
 
@@ -549,6 +554,31 @@ namespace lab6
 
             Render();
         }
+
+        private void LoadTexture_Click(object sender, RoutedEventArgs e)
+        {
+            var openFileDialog = new Microsoft.Win32.OpenFileDialog();
+            openFileDialog.Filter = "Изображения (*.png;*.jpg;*.jpeg;*.bmp)|*.png;*.jpg;*.jpeg;*.bmp";
+            openFileDialog.Title = "Выберите файл текстуры (Лаба 9)";
+            if (openFileDialog.ShowDialog() == true)
+            {
+                try
+                {
+                    _renderer.LoadTexture(openFileDialog.FileName);
+                    ModeSelector.SelectedIndex = 3;
+                    if (BackfaceCullingCheckBox != null)
+                        BackfaceCullingCheckBox.IsChecked = true;
+
+                    Render();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Ошибка загрузки текстуры: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+        private void ApplyLight_Click(object sender, RoutedEventArgs e) { Render(); }
 
     }
 }
