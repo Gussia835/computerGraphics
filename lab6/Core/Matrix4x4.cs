@@ -203,7 +203,7 @@ namespace lab6.Core
 
         public static Matrix4x4 LookAt(Point eye, Point target, Point up)
         {
-            // Ось Z направлена ОТ камеры К цели (смотрим вдоль +Z в камерной системе)
+            // Ось Z 
             double zx = target.X - eye.X;
             double zy = target.Y - eye.Y;
             double zz = target.Z - eye.Z;
@@ -211,7 +211,7 @@ namespace lab6.Core
             if (zLen < 1e-10) return Identity;
             zx /= zLen; zy /= zLen; zz /= zLen;
 
-            // Ось X = up x z
+            // Ось X
             double xx = up.Y * zz - up.Z * zy;
             double xy = up.Z * zx - up.X * zz;
             double xz = up.X * zy - up.Y * zx;
@@ -219,7 +219,7 @@ namespace lab6.Core
             if (xLen < 1e-10) return Identity;
             xx /= xLen; xy /= xLen; xz /= xLen;
 
-            // Ось Y = z x x
+            // Ось Y
             double yx = zy * xz - zz * xy;
             double yy = zz * xx - zx * xz;
             double yz = zx * xy - zy * xx;

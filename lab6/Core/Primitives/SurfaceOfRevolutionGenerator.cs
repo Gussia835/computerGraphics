@@ -53,11 +53,13 @@ namespace lab6.Core.Primitives
             {
                 int nextRing = (i + 1) % divisions;
 
-                for (int j = 0; j < ptsPerRing - 1; j++)
+                for (int j = 0; j < ptsPerRing; j++)
                 {
+                    int jNext = (j + 1) % ptsPerRing;
+
                     int p1 = i * ptsPerRing + j;
-                    int p2 = i * ptsPerRing + j + 1;
-                    int p3 = nextRing * ptsPerRing + j + 1;
+                    int p2 = i * ptsPerRing + jNext;
+                    int p3 = nextRing * ptsPerRing + jNext;
                     int p4 = nextRing * ptsPerRing + j;
 
                     poly.Faces.Add(new Polygon(p1, p4, p3, p2));
