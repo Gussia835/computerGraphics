@@ -340,7 +340,7 @@ namespace lab6.Core
             {
                 if (face.VertexIndices.Length < 3) continue;
 
-                // Подготовка UV для текстур (логика товарища)
+                // Подготовка UV для текстур
                 if (face.TexCoords == null || face.TexCoords.Length != face.VertexIndices.Length)
                     face.AssignDefaultUV(face.VertexIndices.Length);
 
@@ -364,7 +364,7 @@ namespace lab6.Core
                 if (worldItems.Count < 3) continue;
 
                 // Отсечение нелицевых граней
-                if (enableBackfaceCulling)
+                if (enableBackfaceCulling || EnableBackfaceCulling)
                 {
                     Point normal = CalculateFaceNormal(worldItems[0].pt, worldItems[1].pt, worldItems[2].pt);
                     Point v = new Point(-worldItems[0].pt.X, -worldItems[0].pt.Y, -worldItems[0].pt.Z);
@@ -377,6 +377,28 @@ namespace lab6.Core
                     {
                         if (Math.Abs(dotProduct / (nLen * vLen)) < 0.03) continue;
                     }
+
+                    /*Point v;
+                    if (customViewVector.HasValue)
+                    {
+                        v = new Point(-customViewVector.Value.X, -customViewVector.Value.Y, -customViewVector.Value.Z);
+                    }
+
+                    else if (isPerspective)
+                    {
+                        v = new Point(-worldItems[0].pt.X, -worldItems[0].pt.Y, -worldItems[0].pt.Z);
+                    }
+
+                    else
+                    {
+                        v = new Point(0, 0, -1);
+                    }
+
+                    double dotProduct = normal.X * v.X + normal.Y * v.Y + normal.Z * v.Z;
+                    if (dotProduct <= 0)
+                    {
+                        continue;
+                    }*/
                 }
 
                 // экранные точки с рассчитанным цветом и UV
@@ -387,15 +409,15 @@ namespace lab6.Core
                 foreach (var item in worldItems)
                 {
                     var pt = item.pt;
-                    if (isPerspective && viewMatrix == null) pt = pt.Transform(Matrix4x4.Translate(0, 0, cameraDistance + 2));
+                    //if (isPerspective && viewMatrix == null) pt = pt.Transform(Matrix4x4.Translate(0, 0, cameraDistance + 2));
 
                     var projected = pt.Transform(projectionMatrix);
                     var normalized = projected.Normalize();
 
                     if (double.IsNaN(normalized.X) || double.IsNaN(normalized.Y) || double.IsInfinity(normalized.X) || double.IsInfinity(normalized.Y)) continue;
 
-                    int sx = (int)(centerX + normalized.X * scale);
-                    int sy = (int)(centerY - normalized.Y * scale);
+                    int sx = (int)Math.Round(centerX + normalized.X * scale);
+                    int sy = (int)Math.Round(centerY - normalized.Y * scale);
                     float sz = isPerspective ? (float)(1.0 / Math.Max(pt.Z, Near)) : (float)pt.Z;
 
                     // ламберт
@@ -403,7 +425,14 @@ namespace lab6.Core
                     if (item.idx >= 0)
                     {
                         // усреднённая нормаль для плавного Гуро
-                        normal = vertexNormals[item.idx];
+                        Point localN = vertexNormals[item.idx];
+                        // трансформируем нормаль ротацией modelMatrix (без translate)
+                        normal = new Point(
+                            localN.X * modelMatrix.M11 + localN.Y * modelMatrix.M21 + localN.Z * modelMatrix.M31,
+                            localN.X * modelMatrix.M12 + localN.Y * modelMatrix.M22 + localN.Z * modelMatrix.M32,
+                            localN.X * modelMatrix.M13 + localN.Y * modelMatrix.M23 + localN.Z * modelMatrix.M33);
+                        double nLen0 = Math.Sqrt(normal.X * normal.X + normal.Y * normal.Y + normal.Z * normal.Z);
+                        if (nLen0 > 1e-10) normal = new Point(normal.X / nLen0, normal.Y / nLen0, normal.Z / nLen0);
                     }
                     else
                     {
